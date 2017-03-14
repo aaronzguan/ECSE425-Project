@@ -85,9 +85,9 @@ begin
 				--slt, slti
 				when "0100" =>
 					if (signed(data0) < signed(data1)) then
-						temp_result <= '00000000000000000000000000000001';
+						temp_result <= “00000000000000000000000000000001”;
 					else
-						temp_result <= '00000000000000000000000000000000';
+						temp_result <= “00000000000000000000000000000000”;
 					end if;
 
 				--and, andi
