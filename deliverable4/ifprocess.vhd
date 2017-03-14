@@ -1,3 +1,4 @@
+
 --********************************************************************
 -- ECSE 425, Group 6
 -- Zhong GUAN(260758587)
@@ -11,7 +12,6 @@
 -- or the instruction location as determined by a branch
 
 --********************************************************************
-
 
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
