@@ -1,3 +1,4 @@
+
 --********************************************************************
 -- ECSE 425, Group 6
 -- Zhong GUAN(260758587)
@@ -8,7 +9,6 @@
 -- The program is loaded from memory according to the current pc 
 
 --********************************************************************
-
 
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
