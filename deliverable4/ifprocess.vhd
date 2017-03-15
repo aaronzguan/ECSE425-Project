@@ -28,7 +28,6 @@ ENTITY ifprocess IS
 	PORT(
 		clock: IN STD_LOGIC;
 		reset: in std_logic := '0';
-		processor_enable: in std_logic := '1';
 		insert_stall: in std_logic := '0';
 		BranchAddr: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
 		Branch_taken: IN STD_LOGIC := '0';
@@ -86,29 +85,33 @@ begin
 			--Synchronous reset
 			if (reset = '1') then
 				pc <= (others => '0');
-			--Update PC as long as we don't stall
-			elsif (processor_enable = '1') and (insert_stall = '0') then
-				pc <= next_pc;
-				pc_plus4 <= std_logic_vector(unsigned(pc) + 4);
-				read_address_reg <= to_integer(unsigned(pc));
 			end if;
 		end if;
 
 		if(falling_edge(clock)) then
-			if(Branch_taken = '1') then
+			if(Branch_taken = '1') and (insert_stall = '0')then
 				next_addr <= BranchAddr;
 				next_pc <= BranchAddr;
-			else 
+			elsif (Branch_taken = '0') and (insert_stall = '0') then
 				next_addr <= pc_plus4;
 				next_pc <= pc_plus4;
+			elsif(insert_stall = '1') then
+				next_addr <= (others => '0');
 			end if;
-			-- read data
-			if (waitrequest = '1') then
-				inst(31 downto 24) <= ram_block(read_address_reg);
-				inst(23 downto 16) <= ram_block(read_address_reg+1);
-				inst(15 downto 8) <= ram_block(read_address_reg+2);
-				inst(7 downto 0) <= ram_block(read_address_reg+3);
+			-- read data if not stall
+			if (insert_stall = '0') then
+				pc <= next_pc;
+				pc_plus4 <= std_logic_vector(unsigned(pc) + 4);
+				read_address_reg <= to_integer(unsigned(pc));
+				inst_i(31 downto 24) <= ram_block(read_address_reg);
+				inst_i(23 downto 16) <= ram_block(read_address_reg+1);
+				inst_i(15 downto 8) <= ram_block(read_address_reg+2);
+				inst_i(7 downto 0) <= ram_block(read_address_reg+3);
+			-- do not read data if stall
+			elsif (insert_stall = '1') then
+				inst_i <= (others => '0');
 			end if;
+			inst <= inst_i;
 		end if;
 	end process;
 	
