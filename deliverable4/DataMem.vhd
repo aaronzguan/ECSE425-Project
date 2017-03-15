@@ -23,10 +23,12 @@ entity DataMem is
          dest_addr_in: in std_logic_vector(4 downto 0);
          ALU_result: in std_logic_vector(31 downto 0);
          rt_data: in std_logic_vector(31 downto 0);
+	 bran_taken: in std_logic;
          mem_data: out std_logic_vector(31 downto 0);
          ALU_data: out std_logic_vector(31 downto 0);
          dest_addr_out: out std_logic_vector(4 downto 0);
-         bran_addr: out std_logic_vector(31 downto 0)
+         bran_addr: out std_logic_vector(31 downto 0);
+	 bran_taken_out: out std_logic;
          );
 end DataMem;
 
@@ -58,7 +60,7 @@ begin
         -- the opcode is for branch
         if(opcode = "000101" or "000100")then
           bran_addr <= ALU_result;
-        
+          bran_taken_out<= bran_taken;
         -- the opcode is sw rt-data ALU_result address
         elsif(opcode = "101011")then
           bran_addr <= '0';
