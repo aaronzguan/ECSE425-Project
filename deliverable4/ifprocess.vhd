@@ -32,8 +32,6 @@ ENTITY ifprocess IS
 		BranchAddr: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
 		Branch_taken: IN STD_LOGIC := '0';
 		next_addr: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
-		--memory
-		memread: IN STD_LOGIC;
 		inst: out std_logic_vector(31 downto 0)
 	);
 END ifprocess;
@@ -42,13 +40,13 @@ ARCHITECTURE behavioral of ifprocess IS
 	TYPE MEM IS ARRAY(ram_size-1 downto 0) OF STD_LOGIC_VECTOR(7 DOWNTO 0);
 	SIGNAL ram_block: MEM;
 	SIGNAL read_address_reg: INTEGER RANGE 0 to ram_size-1;
-	SIGNAL waitrequest: STD_LOGIC := '1';
 	signal line_counter: integer := 0;
 
 	signal pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal next_pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal pc_plus4: STD_LOGIC_VECTOR (31 DOWNTO 0);
 	signal block_data: STD_LOGIC_VECTOR(31 DOWNTO 0);
+	signal inst_i: std_logic_vector(31 downto 0);
 begin
 	--Read the 'program.txt' file into instruction memory
 	readprogram: process
@@ -63,12 +61,11 @@ begin
 				read(mem_line,read_data); --32bits data
 				block_data <= read_data;
 				for i in 0 to 3 loop
-					ram_block(line_counter) <= block_data(7+8*i downto 0 + 8*i);
+					ram_block(line_counter) <= block_data(7 + 8*i downto 0 + 8*i);
 					line_counter <= line_counter+1;
 				end loop;
 			end loop;
 		file_close(program);
-		
 	        end if;
 	end process;
 
