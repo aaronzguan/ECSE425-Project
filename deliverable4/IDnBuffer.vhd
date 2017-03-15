@@ -49,7 +49,7 @@ architecture behaviour of ID is
           SIGNAL IR: std_logic_vector(31 downto 0);
 begin
 
-reg_process:process
+reg_process:process(clk)
 begin
    if(clk'event and clk = '1') then
       if(hazard_detect = '0') then 
