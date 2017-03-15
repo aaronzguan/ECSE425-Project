@@ -28,7 +28,7 @@ entity DataMem is
          ALU_data: out std_logic_vector(31 downto 0);
          dest_addr_out: out std_logic_vector(4 downto 0);
          bran_addr: out std_logic_vector(31 downto 0);
-	 bran_taken_out: out std_logic;
+	 bran_taken_out: out std_logic
          );
 end DataMem;
 
