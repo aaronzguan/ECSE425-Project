@@ -57,8 +57,8 @@ begin
 		variable mem_line: line;
 		variable read_data: std_logic_vector(31 downto 0);
 	begin
+		IF(now < 1 ps)THEN
 		file_open(program,"program.txt", read_mode);
-		IF (clock'event AND clock = '1') THEN
 			while not endfile(program) loop
 				readline(program,mem_line);
 				read(mem_line,read_data); --32bits data
@@ -69,18 +69,19 @@ begin
 				end loop;
 			end loop;
 		file_close(program);
-		end if;
+		
+	        end if;
 	end process;
 
 	process (clock)
 	begin
 		--Initialize the SRAM in simulation
-		IF(now < 1 ps)THEN
-			For i in 0 to ram_size-1 LOOP
-				ram_block(i) <= std_logic_vector(to_unsigned(i,8));
-			END LOOP;
-		end if;
-
+		--IF(now < 1 ps)THEN
+		--	For i in 0 to ram_size-1 LOOP
+		--		ram_block(i) <= std_logic_vector(to_unsigned(i,8));
+		--	END LOOP;
+		--end if;
+               -- Runze 
 		if(rising_edge(clock)) then
 			--Synchronous reset
 			if (reset = '1') then
@@ -111,11 +112,11 @@ begin
 		end if;
 	end process;
 	
-	waitreq_r_proc: PROCESS (memread)
-	BEGIN
-		IF(memread'event AND memread = '1')THEN
-			waitrequest <= '0' after mem_delay, '1' after mem_delay + clock_period;
-		END IF;
-	END PROCESS;
+	--waitreq_r_proc: PROCESS (memread)
+	--BEGIN
+	--	IF(memread'event AND memread = '1')THEN
+	--		waitrequest <= '0' after mem_delay, '1' after mem_delay + clock_period;
+	--	END IF;
+	--END PROCESS;
 
 end behavioral;
