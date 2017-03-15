@@ -20,12 +20,12 @@ entity DataMem is
     port(
          clock: in std_logic;
          opcode: in std_logic_vector(5 downto 0);
-         rd_data_in: in std_logic_vector(31 downto 0);
+         dest_addr_in: in std_logic_vector(4 downto 0);
          ALU_result: in std_logic_vector(31 downto 0);
          rt_data: in std_logic_vector(31 downto 0);
          mem_data: out std_logic_vector(31 downto 0);
          ALU_data: out std_logic_vector(31 downto 0);
-         rd_data_out: out std_logic_vector(31 downto 0);
+         dest_addr_out: out std_logic_vector(4 downto 0);
          bran_addr: out std_logic_vector(31 downto 0)
          );
 end DataMem;
@@ -45,7 +45,7 @@ begin
      process(clock)
      begin
        if(clock' event and clock ='1')then
-        rd_data_out <= rd_data_in;
+        dest_addr_out <= dest_addr_in;
         
         --This is a cheap trick to initialize the SRAM in simulation
 		IF(now < 1 ps)THEN
@@ -56,18 +56,20 @@ begin
  
         
         -- the opcode is for branch
-        if(opcode = "111111")then
+        if(opcode = "000101" or "000100")then
           bran_addr <= ALU_result;
         
         -- the opcode is sw rt-data ALU_result address
-        elsif(opcode = "111111")then
+        elsif(opcode = "101011")then
+          bran_addr <= '0';
           memwrite <= '1';
           for i in 0 to 3 loop
              ram_block(to_integer(unsigned(ALU_result))+ i) <= rt_data(8*i+7 downto 8*i);
           end loop;
           
         -- the opcode is lw mem_data ALU_result address
-        elsif(opcode = "111111")then
+        elsif(opcode = "100011")then
+          bran_addr <= '0';
           memread <= '1';
           for i in 0 to 3 loop
              mem_data(8*i+7 downto 8*i) <= ram_block(to_integer(unsigned(ALU_result))+i);
@@ -75,6 +77,7 @@ begin
              
         -- the opcode is other
         else
+        bran_addr <= '0';
         ALU_data <= ALU_result;
         end if;
        end if;
