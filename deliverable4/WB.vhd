@@ -31,7 +31,7 @@ signal mux: std_logic:= '0';
 
 
 begin
-wb_process:process
+wb_process:process(clk)
 begin
    if (clk'event and clk = '1') then 
       if(opcode = "100011") then 
