@@ -93,7 +93,7 @@ begin
 				next_addr <= pc_plus4;
 				next_pc <= pc_plus4;
 			elsif(insert_stall = '1') then
-				next_addr <= (others => '0');
+			--	next_addr <= (others => '0');
 			end if;
 			-- read data if not stall
 			if (insert_stall = '0') then
@@ -106,7 +106,7 @@ begin
 				inst_i(7 downto 0) <= ram_block(read_address_reg+3);
 			-- do not read data if stall
 			elsif (insert_stall = '1') then
-				inst_i <= (others => '0');
+			--	inst_i <= (others => '0');
 			end if;
 			inst <= inst_i;
 		end if;
