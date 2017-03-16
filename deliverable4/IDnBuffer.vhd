@@ -66,6 +66,7 @@ architecture behaviour of ID is
           SIGNAL dest_address: std_logic_vector(4 downto 0):="00000";
           SIGNAL temp_MEM_control_buffer: std_logic_vector(5 downto 0);
           SIGNAL hazard_detect: std_logic:= '0';
+          signal write_reg_txt: std_logic := '0'; -- indicate program ends
 begin
 
           opcode <= IR(31 downto 26);
@@ -226,7 +227,6 @@ end process;
 
 -- Catherine: to output register value to txt file when program ends  
 file_handler_process: process
-        signal write_reg_txt: std_logic := '0';
         file file_pointer : text;
         variable line_content : string(1 to 32);
         variable reg_value : std_logic_vector(31 downto 0);
