@@ -13,9 +13,7 @@ USE ieee.numeric_std.all;
 
 entity DataMem is
     GENERIC(
-		ram_size : INTEGER := 32768;
-		mem_delay : time := 1 ns;
-		clock_period : time := 1 ns
+		ram_size : INTEGER := 32768
 	);
     port(
          clock: in std_logic;
@@ -53,26 +51,27 @@ begin
  
         
         -- the opcode is for branch
-        if(opcode = "000101" or "000100")then
+        if(opcode = "000101" or opcode = "000100")then
           bran_addr <= ALU_result;
           bran_taken_out<= bran_taken;
-        -- the opcode is sw rt-data ALU_result address
+			
+        -- the opcode is sw 
         elsif(opcode = "101011")then
-          bran_addr <= '0';
+          bran_addr <= std_logic_vector(to_unsigned(0, 32));
           for i in 0 to 3 loop
              ram_block(to_integer(unsigned(ALU_result))+ i) <= rt_data(8*i+7 downto 8*i);
           end loop;
           
-        -- the opcode is lw mem_data ALU_result address
+        -- the opcode is lw 
         elsif(opcode = "100011")then
-          bran_addr <= '0';
+         bran_addr <= std_logic_vector(to_unsigned(0, 32));
           for i in 0 to 3 loop
              mem_data(8*i+7 downto 8*i) <= ram_block(to_integer(unsigned(ALU_result))+i);
           end loop;
              
         -- the opcode is other
         else
-        bran_addr <= '0';
+        bran_addr <= std_logic_vector(to_unsigned(0, 32));
         ALU_data <= ALU_result;
         end if;
        end if;
