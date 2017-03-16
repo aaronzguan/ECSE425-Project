@@ -44,7 +44,7 @@ entity ALU is
 		    LO : out std_logic_vector(31 downto 0);
 	    	zero : out std_logic
 	);
-end entity;
+end ALU;
 
 architecture behaviour of ALU is
 
