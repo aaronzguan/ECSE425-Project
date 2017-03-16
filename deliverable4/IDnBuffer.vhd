@@ -31,6 +31,7 @@ entity ID is
               writeback_register_content: in  std_logic_vector(31 downto 0);
               ex_state_buffer: in std_logic_vector(10 downto 0);
               instruction_addr_out: out std_logic_vector(31 downto 0);
+	      jump_addr: out std_logic_vector(31 downto 0);
               rs:  out std_logic_vector(31 downto 0);
               rt:  out  std_logic_vector(31 downto 0);  
               --rd_addr: out std_logic_vector(4 downto 0);
@@ -144,6 +145,7 @@ begin
       opcode_out<=IR(31 downto 26);
       funct_out <= funct;
       instruction_addr_out<=instruction_addr;	
+      jump_addr <= IR(25 downto 0);
       signExtImm(15 downto 0) <= immediate;
       if(IR(31 downto 27) = "00110") then
           signExtImm(31 downto 16)<=(31 downto 16 => '0');     
