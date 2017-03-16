@@ -44,7 +44,7 @@ ARCHITECTURE behavioral of ifprocess IS
 
 	signal pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal next_pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
-	signal pc_plus4: STD_LOGIC_VECTOR (31 DOWNTO 0);
+	signal pc_plus4: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal block_data: STD_LOGIC_VECTOR(31 DOWNTO 0);
 	signal inst_i: std_logic_vector(31 downto 0);
 begin
