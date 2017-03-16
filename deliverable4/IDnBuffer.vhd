@@ -13,10 +13,16 @@
 -- add hazard detect 
 -- add controler for forward 
 --fix some bug
+
+-- add register value output to .txt file
+-- Zhou Yining
 --********************************************************************
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+-- Catherine: library for file handler
+use ieee.std_logic_arith.all;
+use std.textio.all;
 
 entity ID is
         GENERIC(
@@ -181,7 +187,7 @@ begin
            -- lw
          when "100011" => 
                temp_MEM_control_buffer(5) <= '0';
-           -- lui
+           -- luiha
          when "001111" => 
               temp_MEM_control_buffer(5) <= '1';
             -- xori
@@ -217,4 +223,39 @@ begin
        des_addr<= dest_address;
     end if;
 end process;
+
+-- Catherine: to output register value to txt file when program ends  
+file_handler_process: process
+        signal write_reg_txt: std_logic := '0';
+        file file_pointer : text;
+        variable line_content : string(1 to 32);
+        variable reg_value : std_logic_vector(31 downto 0);
+        variable line_num : line;
+        variable i,j : integer := 0;
+      begin
+-- when the program ends
+      if(write_reg_txt = '1')then
+        file_open(file_pointer, "register_file.txt", WRITE_MODE);
+-- register_file.txt has 32 lines
+-- convert each bit value of reg_value to character for writing 
+        for i in 0 to 32 loop
+         reg_value := register_block(i);
+          for j in 0 to 32 loop 
+            if(reg_value(j) = '0')then
+                line_content(32-j) := '0';
+            else
+                line_content(32-j) := '1';
+            end if;
+          end loop;
+          --write the line
+          write(line_num, line_content); 
+          --write the contents into txt file
+          writeline(file_pointer, line_num); 
+          wait for 10ns;
+        end loop;
+        file_close(file_pointer);
+        wait;
+      end if;
+    end process;
+	      
 end behaviour;
