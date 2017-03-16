@@ -66,7 +66,7 @@ begin
 			temp_zero <= '0';
 
 			case ALU_opcode is
-				--add, addi
+				--add, addi, sw,lw
 				when "0000" =>
 					temp_result <= std_logic_vector(signed(data0) + signed(data1));
 
@@ -82,7 +82,7 @@ begin
 				when "0011" =>
 					temp_HILO <= std_logic_vector(signed(data0) mod signed(data1)) & std_logic_vector(signed(data0) / signed(data0));
 
-				--slt, slti
+				--slt, slti 
 				when "0100" =>
 					if (signed(data0) < signed(data1)) then
 						temp_result <= “00000000000000000000000000000001”;
@@ -115,28 +115,34 @@ begin
 					temp_result <= temp_HILO(31 downto 0);
 
 				--lui
-				when "1011" =>
-					temp_result <= to_stdlogicvector(to_bitvector(data_B) sll 16)
+				when "1011" =>  
+					temp_result <= to_stdlogicvector(to_bitvector(data1) sll 16) -- it should be data1 instead of data_b?
 
 				--sll
-				when "1100" =>
-					temp_result <= std_logic_vector(signed(data0) sll signed(data1));
+				when "1100" =>	-- sll: R[rd] = R[rt] << shamt, shamt is data1(10 downto 6)
+						-- Aaron: should use the data1(10 downto 6) instead of whole 32 bits data1
+					temp_result <= std_logic_vector(signed(data0) sll signed(data1(10 downto 6)));
 
 				--srl
-				when "1101" =>
-					temp_result <= std_logic_vector(signed(data0) srl signed(data1));
+				when "1101" =>	-- srl: R[rd] = R[rt] >> shamt, shamt is data1(10 downto 6)
+						-- Aaron: should use the data1(10 downto 6) instead of whole 32 bits data1
+					temp_result <= std_logic_vector(signed(data0) srl signed(data1(10 downto 6)));
 
 				--sra
-				when "1110" =>
-					temp_result <= std_logic_vector(signed(data0) sra signed(data1));
-
-				when "1111" =>
+				when "1110" =>	-- sra: R[rd] = R[rt] >>> shamt, shamt is data1(10 downto 6)
+						-- Aaron: it should use the data1(10 downto 6) instead of whole 32 bits data1
+					temp_result <= std_logic_vector(signed(data0) sra signed(data1(10 downto 6)));
+				
+				--beq, bne
+				when "1111" =>  
 					if (signed(data0) = signed(data1)) then
 						temp_zero <= '1';
 					else
 						temp_zero <= '0';
 					end if;
-
+						
+				-- j, jr, jal
+						
 				when others =>
 					temp_zero <= '0';
 					temp_result <= 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
