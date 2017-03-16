@@ -14,6 +14,8 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
 USE ieee.numeric_std.all;
+USE STD.textio.all;
+USE ieee.std_logic_textio.all;
 
 entity DataMem is
     GENERIC(
@@ -30,7 +32,8 @@ entity DataMem is
          ALU_data: out std_logic_vector(31 downto 0);
          dest_addr_out: out std_logic_vector(4 downto 0);
          bran_addr: out std_logic_vector(31 downto 0);
-	 bran_taken_out: out std_logic
+	 bran_taken_out: out std_logic;
+	 write_reg_txt: in std_logic := '0' -- indicate program ends
          );
 end DataMem;
 
@@ -38,6 +41,8 @@ architecture behavior of DataMem is
     -- memory
     TYPE MEM IS ARRAY(ram_size-1 downto 0) OF STD_LOGIC_VECTOR(7 DOWNTO 0);
 	SIGNAL ram_block: MEM;
+	-- output file
+	signal outdata: std_logic_vector(31 downto 0);
     
 begin
  
@@ -80,7 +85,36 @@ begin
         end if;
        end if;
     end process;
-    
+	       
+    output: process
+		file file_pointer : text;
+        	variable line_content : string(1 to 32);
+        	variable reg_value  : std_logic_vector(31 downto 0);
+        	variable line_num : line;
+       		variable i,j : integer := 0;
+	begin
+	if(write_reg_txt = '1') then -- program ends
+		file_open(file_pointer, "memory.txt", write_mode);
+		for i in 0 to 8191 loop
+			for j in 0 to 3 loop
+				outdata(7 + 8*j downto 8*j) <= ram_block(i*4+j);
+			end loop;
+			reg_value := outdata;
+			for x in 0 to 31 loop
+				if(reg_value(x) = '0') then
+					line_content(32-x) := '0';
+				else
+					line_content(32-x) := '1';
+				end if;
+			end loop;
+			write(line_num, line_content);
+			writeline(file_pointer, line_num);
+			wait for 10ns;
+		end loop;
+		file_close(file_pointer);
+		wait;
+	end if;
+	end process;	
 end behavior;
 
          
