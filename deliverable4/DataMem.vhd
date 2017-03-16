@@ -36,11 +36,6 @@ architecture behavior of DataMem is
     -- memory
     TYPE MEM IS ARRAY(ram_size-1 downto 0) OF STD_LOGIC_VECTOR(7 DOWNTO 0);
 	SIGNAL ram_block: MEM;
-	SIGNAL write_waitreq_reg: STD_LOGIC := '1';
-	SIGNAL read_waitreq_reg: STD_LOGIC := '1';
-    signal waitrequest: std_logic;
-    signal memread: std_logic;
-    signal memwrite: std_logic;
     
 begin
  
@@ -64,7 +59,6 @@ begin
         -- the opcode is sw rt-data ALU_result address
         elsif(opcode = "101011")then
           bran_addr <= '0';
-          memwrite <= '1';
           for i in 0 to 3 loop
              ram_block(to_integer(unsigned(ALU_result))+ i) <= rt_data(8*i+7 downto 8*i);
           end loop;
@@ -72,7 +66,6 @@ begin
         -- the opcode is lw mem_data ALU_result address
         elsif(opcode = "100011")then
           bran_addr <= '0';
-          memread <= '1';
           for i in 0 to 3 loop
              mem_data(8*i+7 downto 8*i) <= ram_block(to_integer(unsigned(ALU_result))+i);
           end loop;
@@ -85,22 +78,6 @@ begin
        end if;
     end process;
     
-    waitreq_w_proc: PROCESS (memwrite)
-	BEGIN
-		IF(memwrite'event AND memwrite = '1')THEN
-			write_waitreq_reg <= '0' after mem_delay, '1' after mem_delay + clock_period;
-
-		END IF;
-	END PROCESS;
-
-	waitreq_r_proc: PROCESS (memread)
-	BEGIN
-		IF(memread'event AND memread = '1')THEN
-			read_waitreq_reg <= '0' after mem_delay, '1' after mem_delay + clock_period;
-		END IF;
-	END PROCESS;
-	waitrequest <= write_waitreq_reg and read_waitreq_reg;
-
 end behavior;
 
          
