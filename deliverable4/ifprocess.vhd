@@ -53,14 +53,22 @@ begin
 	readprogram: process
 		file program: text;
 		variable mem_line: line;
-		variable read_data: std_logic_vector(31 downto 0);
+		variable read_data: string(1 to 32);
+		variable char : character:='0'
 	begin
 		IF(now < 1 ps)THEN
 		file_open(program,"program.txt", read_mode);
 			while not endfile(program) loop
 				readline(program,mem_line);
 				read(mem_line,read_data); --32bits data
-				block_data <= read_data;
+				for i in 0 to 31 loop
+					char := read_data(i);
+					if (char = '0') then
+						block_data(31-i) <= '0';
+					else
+						block_data(31-i) <= '1';
+					end if;
+				end loop;
 				for i in 0 to 3 loop
 					ram_block(line_counter) <= block_data(7 + 8*i downto 0 + 8*i);
 					line_counter <= line_counter+1;
