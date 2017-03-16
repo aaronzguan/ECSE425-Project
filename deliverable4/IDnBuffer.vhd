@@ -238,9 +238,9 @@ file_handler_process: process
         file_open(file_pointer, "register_file.txt", WRITE_MODE);
 -- register_file.txt has 32 lines
 -- convert each bit value of reg_value to character for writing 
-        for i in 0 to 32 loop
+        for i in 0 to 31 loop
          reg_value := register_block(i);
-          for j in 0 to 32 loop 
+          for j in 0 to 31 loop 
             if(reg_value(j) = '0')then
                 line_content(32-j) := '0';
             else
