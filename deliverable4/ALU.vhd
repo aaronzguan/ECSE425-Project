@@ -116,7 +116,7 @@ begin
 
 				--lui
 				when "1011" =>
-					
+					temp_result <= to_stdlogicvector(to_bitvector(data_B) sll 16)
 
 				--sll
 				when "1100" =>
