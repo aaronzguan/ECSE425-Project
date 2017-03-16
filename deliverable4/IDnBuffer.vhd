@@ -40,7 +40,8 @@ entity ID is
               EX_control_buffer: out std_logic_vector(10 downto 0); --  for ex stage provide information for forward and harzard detect, first bit for mem_read, 9-5 for rt, 4-0 for rs
               MEM_control_buffer: out std_logic_vector(5 downto 0); --  for mem stage, provide info for forward and hazard detect, first bit for wb_signal, 4-0 for des_adr
               WB_control_buffer: out std_logic_vector(5 downto 0); --  for mem stage, provide info for forward and hazard detect, first bit for wb_signal, 4-0 for des_adr
-              opcode_out: out  std_logic_vector(5 downto 0)
+              funct_out: out std_logic_vector(5 downto 0);
+	     opcode_out: out  std_logic_vector(5 downto 0)
              
 	);
 end ID;
@@ -141,6 +142,7 @@ begin
      -- rd_addr<=rd_pos;
       --rt_addr<=rt_pos;
       opcode_out<=IR(31 downto 26);
+      funct_out <= funct;
       instruction_addr_out<=instruction_addr;	
       signExtImm(15 downto 0) <= immediate;
       if(IR(31 downto 27) = "00110") then
