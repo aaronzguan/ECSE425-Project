@@ -49,7 +49,7 @@ entity ID is
               WB_control_buffer: out std_logic_vector(5 downto 0); --  for mem stage, provide info for forward and hazard detect, first bit for wb_signal, 4-0 for des_adr
               funct_out: out std_logic_vector(5 downto 0);
 	     opcode_out: out  std_logic_vector(5 downto 0)
-             
+             write_reg_txt: in std_logic ; -- indicate program ends
 	);
 end ID;
 
@@ -66,7 +66,7 @@ architecture behaviour of ID is
           SIGNAL dest_address: std_logic_vector(4 downto 0):="00000";
           SIGNAL temp_MEM_control_buffer: std_logic_vector(5 downto 0);
           SIGNAL hazard_detect: std_logic:= '0';
-          signal write_reg_txt: std_logic := '0'; -- indicate program ends
+          
 begin
 
           opcode <= IR(31 downto 26);
