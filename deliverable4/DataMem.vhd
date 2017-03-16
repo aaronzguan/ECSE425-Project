@@ -1,11 +1,15 @@
 -- ********************************************************************
--- ECSE 425, Group 6
+-- -- ECSE 425, Group 6
 -- Zhou Yining(260760795)
 -- Date: March 14, 2017
 
 -- Description: MEM stage is for load or store data from memory. 
--- Use the result from ALU as data memory address.
--- 
+-- For memory access: use the result from ALU as data memory address.
+-- For branch: use the ALU result as branch address.
+-- For others: output ALU result.
+
+-- Date: March 16, 2017
+-- add output final memory content to .txt file 
 -- ********************************************************************
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
