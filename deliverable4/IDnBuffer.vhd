@@ -43,7 +43,7 @@ entity ID is
               opcode_out: out  std_logic_vector(5 downto 0)
              
 	);
-end entity;
+end ID;
 
 architecture behaviour of ID is
           TYPE registerarray is ARRAY(register_size-1 downto 0) OF std_logic_vector(31 downto 0); 
