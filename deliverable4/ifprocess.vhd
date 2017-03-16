@@ -45,6 +45,7 @@ ARCHITECTURE behavioral of ifprocess IS
 	signal pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal next_pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal pc_plus4: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
+	signal pc_plus4_i: integer;
 	signal block_data: STD_LOGIC_VECTOR(31 DOWNTO 0);
 	signal inst_i: std_logic_vector(31 downto 0);
 begin
@@ -98,7 +99,8 @@ begin
 			-- read data if not stall
 			if (insert_stall = '0') then
 				pc <= next_pc;
-				pc_plus4 <= std_logic_vector(unsigned(pc) + 4);
+				pc_plus4_i <= to_integer(unsigned(pc))+ 4;
+				pc_plus4 <= std_logic_vector(to_unsigned(pc_plus4_i,32));
 				read_address_reg <= to_integer(unsigned(pc));
 				inst_i(31 downto 24) <= ram_block(read_address_reg);
 				inst_i(23 downto 16) <= ram_block(read_address_reg+1);
