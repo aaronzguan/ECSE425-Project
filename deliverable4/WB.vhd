@@ -13,7 +13,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity WB is 
+entity WB is
 	PORT( 
               clk: in  std_logic;
               memory_data: in std_logic_vector(31 downto 0);
@@ -24,11 +24,10 @@ entity WB is
               writeback_addr_out: out std_logic_vector(4 downto 0)
              
 	);
-end entity;
+end WB;
 
 architecture behaviour of WB is
 signal mux: std_logic:= '0';
-
 
 begin
 wb_process:process(clk)
