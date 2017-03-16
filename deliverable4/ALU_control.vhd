@@ -68,7 +68,8 @@ begin
 						temp_ALU_out <= "0111";
 
 					-- xor
-					when "101000" =>
+					--when "101000" => -- Aaron : xor should be "100110" instead of 101000
+					when "100110" =>
 						temp_ALU_out <= "1000";
 
 					-- mfhi
@@ -90,6 +91,11 @@ begin
 					-- sra
 					when "000011" =>
 						temp_ALU_out <= "1110";
+
+					-- Aaron: Add jr
+					when "001000" =>
+						
+						temp_ALU_out <= "";
 
 					when others =>
 						null;
@@ -125,11 +131,11 @@ begin
 			when "000101" =>
 				temp_ALU_out <= "1111";
 
-			-- lw
+			-- sw Aaron: it should be sw instead of lw
 			when "101011" =>
 				temp_ALU_out <= "0000";
 
-			-- sw
+			-- lw Aaron: it should be lw instead of sw
 			when "100011" =>
 				temp_ALU_out <= "0000";
 
