@@ -21,7 +21,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 -- Catherine: library for file handler
-use ieee.std_logic_arith.all;
+--use ieee.std_logic_arith.all;
 use std.textio.all;
 
 entity ID is
@@ -48,8 +48,8 @@ entity ID is
               MEM_control_buffer: out std_logic_vector(5 downto 0); --  for mem stage, provide info for forward and hazard detect, first bit for wb_signal, 4-0 for des_adr
               WB_control_buffer: out std_logic_vector(5 downto 0); --  for mem stage, provide info for forward and hazard detect, first bit for wb_signal, 4-0 for des_adr
               funct_out: out std_logic_vector(5 downto 0);
-	     opcode_out: out  std_logic_vector(5 downto 0)
-             write_reg_txt: in std_logic ; -- indicate program ends
+	     opcode_out: out  std_logic_vector(5 downto 0);
+             write_reg_txt: in std_logic  -- indicate program ends
 	);
 end ID;
 
