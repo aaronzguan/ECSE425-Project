@@ -30,17 +30,19 @@ entity EX is
               WB_control_buffer_before: in std_logic_vector(5 downto 0); --control buffer from the one before last instruction which is in wb stage now
               writeback_data: in std_logic_vector(31 downto 0); -- data for forwarding of last last instruction
        
-              -- for if stage 
-              branch_addr: out std_logic_vector(31 downto 0);
-              bran_taken: out std_logic;
+             
+              
               -- for mem stage 
+	      branch_addr: out std_logic_vector(31 downto 0);
+              bran_taken: out std_logic;
               opcode_out: out std_logic_vector(5 downto 0);
               des_addr_out: out std_logic_vector(4 downto 0);
               ALU_result: out std_logic_vector(31 downto 0);
               rt_data: out std_logic_vector(31 downto 0);
               MEM_control_buffer_out: out std_logic_vector(5 downto 0); --  for mem stage, provide info for forward and hazard detect, first bit for wb_signal, 4-0 for des_adr
               WB_control_buffer_out: out std_logic_vector(5 downto 0); --  for mem stage, provide info for forward and hazard detect, first bit for wb_signal, 4-0 for des_adr
-              EX_control_buffer_out: out std_logic_vector(10 downto 0) --  for ex stage provide information for forward and harzard detect, first bit for mem_read, 9-5 for rt, 4-0 for rs
+             -- for id stage 
+	      EX_control_buffer_out: out std_logic_vector(10 downto 0) --  for ex stage provide information for forward and harzard detect, first bit for mem_read, 9-5 for rt, 4-0 for rs
 	      
 	);
 end EX;
