@@ -140,6 +140,7 @@ architecture behaviour of testbench is
 ---------------------------------------------------------------------------------
 	signal clock : std_logic;
         signal programend: std_logic := '0';
+	constant clock_period: time := 1 ns;
  	-- signal into if
         signal reset : std_logic;
 	signal insert_stall : std_logic := '0';
@@ -212,7 +213,7 @@ generic map (
 	) 
 port map (
 	clk => clock,
-        instruction _addr => inst_addr,
+        instruction_addr => inst_addr,
         IR_in => inst,
         writeback_register_address => writeback_register_address,
        	writeback_register_content => writeback_data, -- in
@@ -274,7 +275,7 @@ port map (
         MEM_control_buffer_out => MEM_control_buffer_from_mem,
         WB_control_buffer_out => WB_control_buffer_from_mem,
         mem_data => memory_data,
-        ALU_data => alu_result_data_from_mem,
+        ALU_data => alu_result_from_mem,
         dest_addr_out => des_addr_from_mem,
         bran_addr => branch_addr,
         bran_taken_out => branch_taken
@@ -282,23 +283,23 @@ port map (
 	
 writeback: WB
 port map (
-        clk => clock;
+        clk => clock,
         memory_data => memory_data,
         alu_result => alu_result_from_mem,
         opcode => opcode_bt_MEmnWb,
         writeback_addr => des_addr_from_mem,
         WB_control_buffer => WB_control_buffer_from_mem,
         WB_control_buffer_out => WB_control_buffer_from_wb,
-        writeback_data_out => writeback_register_address,
+        writeback_addr_out => writeback_register_address,
         writeback_data_out => writeback_data
         );
 
 clk_process : process
 begin
-	clk <= '0';
-	wait for clk_period/2;
-	clk <= '1';
-	wait for clk_period/2;
+	clock <= '0';
+	wait for clock_period/2;
+	clock <= '1';
+	wait for clock_period/2;
 end process;
 
 	
