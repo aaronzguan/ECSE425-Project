@@ -28,12 +28,19 @@ entity DataMem is
          ALU_result: in std_logic_vector(31 downto 0);
          rt_data: in std_logic_vector(31 downto 0);
 	 bran_taken: in std_logic;
-         mem_data: out std_logic_vector(31 downto 0);
+	 MEM_control_buffer: in std_logic_vector(5 downto 0);
+	 WB_control_buffer : in std_logic_vector(5 downto 0);
+	 write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
+	    
+	 MEM_control_buffer_out: in std_logic_vector(5 downto 0); --for ex forward 
+	 WB_control_buffer_out : in std_logic_vector(5 downto 0); -- for wb stage 
+         
+	 mem_data: out std_logic_vector(31 downto 0);
          ALU_data: out std_logic_vector(31 downto 0);
          dest_addr_out: out std_logic_vector(4 downto 0);
-         bran_addr: out std_logic_vector(31 downto 0);
-	 bran_taken_out: out std_logic;
-	 write_reg_txt: in std_logic := '0' -- indicate program ends
+         bran_addr: out std_logic_vector(31 downto 0); -- for if 
+	 bran_taken_out: out std_logic;                -- for if 
+	
          );
 end DataMem;
 
@@ -45,7 +52,7 @@ architecture behavior of DataMem is
 	signal outdata: std_logic_vector(31 downto 0);
     
 begin
- 
+ MEM_control_buffer_out<= MEM_control_buffer;
      process(clock)
      begin
        if(clock' event and clock ='1')then
@@ -83,6 +90,8 @@ begin
         bran_addr <= std_logic_vector(to_unsigned(0, 32));
         ALU_data <= ALU_result;
         end if;
+	elsif(falling_edge(clk))then
+		WB_control_buffer_out<= WB_control_buffer;
        end if;
     end process;
 	       
