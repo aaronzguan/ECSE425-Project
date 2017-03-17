@@ -8,8 +8,8 @@ architecture behaviour of testbench is
 
 	component ifprocess is
 		generic(
-			ram_size : integer := 4096;
-             		clock_period : time : 1 ns
+			ram_size : integer := 4096
+             		--clock_period : time : 1 ns
 		);
    		port (
 			clock : in std_logic;
@@ -55,7 +55,7 @@ architecture behaviour of testbench is
               		clk: in  std_logic;
               		-- from id stage 
               		instruction_addr_in: in std_logic_vector(31 downto 0);
-              		jump_addr : in std_logic_vector( 25 downto 0);
+              		jump_addr : in std_logic_vector( 25 downto 0); -- changed from 31 dwonto 0 to 25 down to 0
               		rs:  in std_logic_vector(31 downto 0);
               		rt:  in  std_logic_vector(31 downto 0);  
               		des_addr: in std_logic_vector(4 downto 0);
@@ -88,24 +88,6 @@ architecture behaviour of testbench is
 	      		EX_control_buffer_out: out std_logic_vector(10 downto 0) --  for ex stage provide information for forward and harzard detect, first bit for mem_read, 9-5 for rt, 4-0 for rs
 		);
 	end component;
-
-  	component ALU is
-    		port (
-			clk : in std_logic;
-          		ALU_opcode : in std_logic_vector(3 downto 0);
-          		data0, data1 : in std_logic_vector(31 downto 0);
-          		result: out std_logic_vector(31 downto 0); 
-          		HI : out std_logic_vector(31 downto 0);
-          		LO : out std_logic_vector(31 downto 0);
-          		zero : out std_logic);
-  	end component;
-  
-  	component ALU_control is
-    		port(
-			opCode : in std_logic_vector(5 downto 0);
-         		funct : in std_logic_vector(5 downto 0);
-         		ALU_out : out std_logic_vector(3 downto 0));
-  	end component;
 
 
 
@@ -160,15 +142,13 @@ architecture behaviour of testbench is
 	--signal MEM_control_buffer: std_logic_vector(5 downto 0);  -- not in use
 	--signal WB_control_buffer: std_logic_vector(5 downto 0);     --not in use
 	
-
-
 --------------------------------------------------------------------
+
 begin
   
 fetch : ifprocess
 generic map (
-	ram_size => 4096,
-        clock_period => 1 ns
+	ram_size => 4096
 	)
 port map (
 	clock => clock,
@@ -203,8 +183,8 @@ port map (
         WB_control_buffer => WB_control_buffer_from_id,
         funct_out => funct_from_id,
         opcode_out => opcode_bt_IdnEx,
-        write_reg_txt => programend,
-              );
+        write_reg_txt => programend
+	);
 execute: EX
 port map (
 	clk => clock,
@@ -230,8 +210,8 @@ port map (
 	rt_data => rt_data_from_ex,
 	MEM_control_buffer_out => MEM_control_buffer_from_ex,		
 	WB_control_buffer_out => WB_control_buffer_from_ex,				
-	EX_control_buffer_out => EX_control_buffer_from_ex,	
-);
+	EX_control_buffer_out => EX_control_buffer_from_ex	
+	);
 
 memory: DataMem
 port map (
