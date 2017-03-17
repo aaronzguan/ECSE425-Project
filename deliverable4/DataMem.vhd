@@ -30,7 +30,6 @@ entity DataMem is
 	 bran_taken: in std_logic;
 	 MEM_control_buffer: in std_logic_vector(5 downto 0);
 	 WB_control_buffer : in std_logic_vector(5 downto 0);
-	 write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
 	    
 	 MEM_control_buffer_out: in std_logic_vector(5 downto 0); --for ex forward 
 	 WB_control_buffer_out : in std_logic_vector(5 downto 0); -- for wb stage 
@@ -40,7 +39,8 @@ entity DataMem is
          dest_addr_out: out std_logic_vector(4 downto 0);
          bran_addr: out std_logic_vector(31 downto 0); -- for if 
 	 bran_taken_out: out std_logic;                -- for if 
-	
+	 write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
+	    
          );
 end DataMem;
 
