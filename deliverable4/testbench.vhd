@@ -303,6 +303,10 @@ begin
 end process;
 
 	
-
-
+test_process : process
+begin
+	wait for 10000* clock_period;
+	 programend <= '1';
+	wait;
+end process;
 end behaviour;
