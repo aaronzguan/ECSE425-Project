@@ -22,7 +22,7 @@ USE ieee.std_logic_textio.all;
 ENTITY ifprocess IS
 	GENERIC(
 		ram_size : INTEGER := 4096;
-		mem_delay : time := 1 ns;
+		--mem_delay : time := 1 ns;
 		clock_period : time := 1 ns
 	);
 	PORT(
@@ -101,7 +101,7 @@ begin
 			elsif (Branch_taken = '0') and (insert_stall = '0') then
 				next_addr <= pc_plus4;
 				next_pc <= pc_plus4;
-			elsif(insert_stall = '1') then
+			--elsif(insert_stall = '1') then
 			--	next_addr <= (others => '0');
 			end if;
 			-- read data if not stall
@@ -115,7 +115,7 @@ begin
 				inst_i(15 downto 8) <= ram_block(read_address_reg+2);
 				inst_i(7 downto 0) <= ram_block(read_address_reg+3);
 			-- do not read data if stall
-			elsif (insert_stall = '1') then
+			--elsif (insert_stall = '1') then
 			--	inst_i <= (others => '0');
 			end if;
 			inst <= inst_i;
