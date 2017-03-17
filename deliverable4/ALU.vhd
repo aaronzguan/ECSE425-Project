@@ -116,7 +116,7 @@ begin
 
 				--lui
 				when "1011" =>  
-					temp_result <= to_stdlogicvector(to_bitvector(data1) sll 16) -- it should be data1 instead of data_b?
+					temp_result <= to_stdlogicvector(to_bitvector(data1) sll 16)
 
 				--sll
 				when "1100" =>	-- sll: R[rd] = R[rt] << shamt, shamt is data1(10 downto 6)
