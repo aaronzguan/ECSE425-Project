@@ -61,8 +61,8 @@ architecture behaviour of testbench is
   signal clock : std_logic;
   signal reset : std_logic;
   signal insert_stall : std_logic := '0';
-	signal Branch_addr : std_logic_vector (31 downto 0);
-	signal Branch_taken : std_logic := '0';
+	signal branch_addr : std_logic_vector (31 downto 0);
+	signal branch_taken : std_logic := '0';
 	signal inst_addr : std_logic_vector (31 downto 0);
   signal inst : std_logic_vector (31 downto 0);
 
@@ -88,8 +88,8 @@ begin
     port map (clock => clock,
               reset => reset,
               insert_stall => insert_stall,
-              BranchAddr => Branch_addr,
-              Branch_taken => Branch_taken,
+              BranchAddr => branch_addr,
+              Branch_taken => branch_taken,
               next_addr => inst_addr,
               inst =>  inst  
              );
@@ -131,8 +131,11 @@ begin
 	          WB_control_buffer => WB_control_buffer,
 	          opcode_in => opcode,
 	          funct_in => funct,
-		        MEM_control_buffer_before => ,
-		        WB_control_buffer_before => ,
+		        MEM_control_buffer_before => , --in
+			WB_control_buffer_before => , --in
+			writeback_data => , --in
+		branch_addr => branch_addr, 
+		bran_taken => branch_taken,
 	
 	
 	
