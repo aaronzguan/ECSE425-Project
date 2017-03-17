@@ -122,6 +122,7 @@ architecture behaviour of testbench is
         signal inst : std_logic_vector (31 downto 0);
 	signal writeback_register_address: std_Logic_vector(4 downto 0); 
 	signal writeback_data: std_logic_vector(31 downto 0);  -- also into ex, out of wb
+        signal EX_control_buffer_from_ex: std_logic_vector(10 downto 0);
        -- signal into ex 
 	  -- from id 
         signal jump_addr: std_logic_vector (25 downto 0);
@@ -132,7 +133,7 @@ architecture behaviour of testbench is
 	signal funct_from_id: std_logic_vector(5 downto 0);
 	signal signExtImm: std_logic_vector(31 downto 0);
         signal opcode_bt_IdnEx: std_logic_vector(5 downto 0); -- out of id 
-        signal EX_control_buffer: std_logic_vector(10 downto 0);
+        signal EX_control_buffer_from_id: std_logic_vector(10 downto 0);
 	signal MEM_control_buffer_from_id: std_logic_vector(5 downto 0);
 	signal WB_control_buffer_from_id: std_logic_vector(5 downto 0);
            -- from mem and wb
