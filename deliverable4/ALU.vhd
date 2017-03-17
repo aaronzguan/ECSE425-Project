@@ -145,7 +145,7 @@ begin
 						
 				when others =>
 					temp_zero <= '0';
-					temp_result <= 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX'
+					temp_result <= 'XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX';
 
 			end case;
 
