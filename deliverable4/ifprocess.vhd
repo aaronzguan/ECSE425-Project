@@ -54,7 +54,7 @@ begin
 		file program: text;
 		variable mem_line: line;
 		variable read_data: string(1 to 32);
-		variable char : character:='0'
+		variable char : character:='0';
 	begin
 		IF(now < 1 ps)THEN
 		file_open(program,"program.txt", read_mode);
