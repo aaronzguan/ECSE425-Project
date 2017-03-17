@@ -57,9 +57,28 @@ architecture behaviour of testbench is
          funct : in std_logic_vector(5 downto 0);
          ALU_out : out std_logic_vector(3 downto 0));
   end component;
-
+    -----------------------------------
   signal clock : std_logic;
   signal reset : std_logic;
+  signal insert_stall : std_logic := '0';
+	signal Branch_addr : std_logic_vector (31 downto 0);
+	signal Branch_taken : std_logic := '0';
+	signal inst_addr : std_logic_vector (31 downto 0);
+  signal inst : std_logic_vector (31 downto 0);
+
+	signal opcode: std_logic_vector(5 downto 0);
+	signal rs: std_logic_vector(31 downto 0);
+	signal rt: std_logic_vector(31 downto 0);
+	signal des_addr: std_logic_vector(4 downto 0);
+	signal funct: std_logic_vector(5 downto 0);
+	signal signExtImm: std_logic_vector(31 downto 0);
+
+	signal EX_control_buffer: std_logic_vector(10 downto 0);
+	signal MEM_control_buffer: std_logic_vector(5 downto 0);
+	signal WB_control_buffer: std_logic_vector(5 downto 0);
+
+	signal programend: std_logic := '0';
+  
 
 begin
   
@@ -68,34 +87,55 @@ begin
                  clock_period => 1 ns)
     port map (clock => clock,
               reset => reset,
-              insert_stall => ,
-              BranchAddr => ,
-              Branch_taken => ,
-              next_addr => ,
-              inst =>  
+              insert_stall => insert_stall,
+              BranchAddr => Branch_addr,
+              Branch_taken => Branch_taken,
+              next_addr => inst_addr,
+              inst =>  inst  
              );
     
   decode : ID
     generic map (register_size => 32) 
     port map (clk => clock,
-              instruction _addr => ,
-              IR_in => ,
-              writeback_register_address => ,
-              writeback_register_content => ,
+              instruction _addr => inst_addr,
+              IR_in => inst,
+        	    writeback_register_address => ,
+        	    writeback_register_content => ,
               ex_state_buffer => ,
-              instruction_addr_out => ,
+	            instruction_addr_out => inst_addr,
               jump_addr => ,
-              rs => ,
-              rt => ,
-              des_addr => ,
-              signExtImm => ,
+              rs => rs,
+              rt => rt,
+              des_addr => des_addr,
+              signExtImm => signExtImm,
               insert_stall => ,
-              EX_control_buffer => ,
-              MEM_control_buffer => ,
-              WB_control_buffer => ,
-              funct_out => ,
-              opcode_out => ,
-              write_reg_txt => 
+              EX_control_buffer => EX_control_buffer,
+              MEM_control_buffer => MEM_control_buffer,
+              WB_control_buffer => WB_control_buffer,
+              funct_out => funct,
+              opcode_out => opcode,
+              write_reg_txt => programend,
               );
+    
+    execute: EX
+    port map (
+	          clk => clock,
+	          instruction_addr_in => inst_addr,
+		        jump_addr => ,
+	          rs => rs,
+	          rt => rt,
+	          des_addr => des_addr,
+	          signExtImm => signExtImm,
+	          EX_control_buffer => EX_control_buffer,
+	          MEM_control_buffer => MEM_control_buffer,
+	          WB_control_buffer => WB_control_buffer,
+	          opcode_in => opcode,
+	          funct_in => funct,
+		        MEM_control_buffer_before => ,
+		        WB_control_buffer_before => ,
+	
+	
+	
+);
 
 end behaviour;
