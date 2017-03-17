@@ -21,7 +21,7 @@ USE ieee.std_logic_textio.all;
 
 ENTITY ifprocess IS
 	GENERIC(
-		ram_size : INTEGER := 4096;
+		ram_size : INTEGER := 4096
 		--mem_delay : time := 1 ns;
 		--clock_period : time := 1 ns
 	);
