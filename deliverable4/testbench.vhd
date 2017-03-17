@@ -88,6 +88,52 @@ architecture behaviour of testbench is
 	      		EX_control_buffer_out: out std_logic_vector(10 downto 0) --  for ex stage provide information for forward and harzard detect, first bit for mem_read, 9-5 for rt, 4-0 for rs
 		);
 	end component;
+		
+  component DataMem is
+       GENERIC(
+		ram_size : INTEGER := 32768
+	      );
+       port(
+                clock: in std_logic;
+                opcode: in std_logic_vector(5 downto 0);
+                dest_addr_in: in std_logic_vector(4 downto 0);
+                ALU_result: in std_logic_vector(31 downto 0);
+                rt_data: in std_logic_vector(31 downto 0);
+	        bran_taken: in std_logic;
+	        MEM_control_buffer: in std_logic_vector(5 downto 0);
+	        WB_control_buffer : in std_logic_vector(5 downto 0);
+	    
+	        MEM_control_buffer_out: out std_logic_vector(5 downto 0); --for ex forward 
+	        WB_control_buffer_out : out std_logic_vector(5 downto 0); -- for wb stage 
+         
+	        mem_data: out std_logic_vector(31 downto 0);
+                ALU_data: out std_logic_vector(31 downto 0);
+                dest_addr_out: out std_logic_vector(4 downto 0);
+                bran_addr: out std_logic_vector(31 downto 0); -- for if 
+	        bran_taken_out: out std_logic;                -- for if 
+	        write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
+	    
+         );
+        end component;
+
+
+     component WB is
+	PORT( 
+              clk: in  std_logic;
+              memory_data: in std_logic_vector(31 downto 0);
+              alu_result: in std_logic_vector(31 downto 0);
+              opcode : in std_logic_vector(5 downto 0);
+              writeback_addr: in std_logic_vector(4 downto 0);
+	      WB_control_buffer: in std_logic_vector(5 downto 0);
+              -- for ex stage forward
+	      WB_control_buffer_out: out std_logic_vector(5 downto 0);
+	      -- for id stage
+	      writeback_data_out: out std_logic_vector(31 downto 0);
+              writeback_addr_out: out std_logic_vector(4 downto 0)
+             
+	   );
+    end component;
+
 
 
 
@@ -215,8 +261,36 @@ port map (
 
 memory: DataMem
 port map (
+        clock => clock;
+        opcode => opcode_bt_ExnMem;
+        dest_addr_in => des_addr_from_ex;
+        ALU_result => ALU_result_from_ex;
+        rt_data => rt_data_from_ex;
+        bran_taken => bran_taken_from_ex;
+        MEM_control_buffer => MEM_control_buffer_from_ex;
+        WB_control_buffer => WB_control_buffer_from_ex;
+        write_reg_txt => programend;
+        MEM_control_buffer_out => MEM_control_buffer_from_mem;
+        WB_control_buffer_out => WB_control_buffer_from_mem;
+        mem_data => memory_data;
+        ALU_data => alu_result_data_from_mem;
+        dest_addr_out => des_addr_from_mem;
+        bran_addr => branch_addr;
+        bran_taken_out => branch_taken
+        );
 	
-);
+writeback: WB
+port map (
+        clk => clock;
+        memory_data => memory_data;
+        alu_result => alu_result_from_mem;
+        opcode => opcode_bt_MEmnWb;
+        writeback_addr => des_addr_from_mem;
+        WB_control_buffer => WB_control_buffer_from_mem;
+        WB_control_buffer_out => WB_control_buffer_from_wb;
+        writeback_data_out => writeback_register_address;
+        writeback_data_out => writeback_data
+        );
 
 clk_process : process
 begin
