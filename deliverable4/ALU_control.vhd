@@ -68,7 +68,6 @@ begin
 						temp_ALU_out <= "0111";
 
 					-- xor
-					--when "101000" => -- Aaron : xor should be "100110" instead of 101000
 					when "100110" =>
 						temp_ALU_out <= "1000";
 
@@ -131,11 +130,11 @@ begin
 			when "000101" =>
 				temp_ALU_out <= "1111";
 
-			-- sw Aaron: it should be sw instead of lw
+			-- sw
 			when "101011" =>
 				temp_ALU_out <= "0000";
 
-			-- lw Aaron: it should be lw instead of sw
+			-- lw
 			when "100011" =>
 				temp_ALU_out <= "0000";
 
