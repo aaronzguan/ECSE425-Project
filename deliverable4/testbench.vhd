@@ -193,10 +193,10 @@ port map (
 	clk => clock,
         instruction _addr => inst_addr,
         IR_in => inst,
-        	writeback_register_address => ,
+        writeback_register_address => writeback_register_address,
        	writeback_register_content => writeback_data, -- in
               	ex_state_buffer => ,
-	instruction_addr_out => inst_addr,
+	instruction_addr_out => inst_addr_from_id,
         jump_addr => jump_addr,
         rs => rs,
         rt => rt,
