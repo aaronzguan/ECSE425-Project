@@ -49,6 +49,7 @@ architecture behaviour of testbench is
           		opcode_out: out  std_logic_vector(5 downto 0);
           		write_reg_txt: in std_logic:='0'
 		);
+	end component;
 
 	component EX is
 		PORT( 
@@ -130,7 +131,6 @@ architecture behaviour of testbench is
 	      -- for id stage
 	      writeback_data_out: out std_logic_vector(31 downto 0);
               writeback_addr_out: out std_logic_vector(4 downto 0)
-             
 	   );
     end component;
 
@@ -231,6 +231,7 @@ port map (
         opcode_out => opcode_bt_IdnEx,
         write_reg_txt => programend
 	);
+	
 execute: EX
 port map (
 	clk => clock,
@@ -261,34 +262,34 @@ port map (
 
 memory: DataMem
 port map (
-        clock => clock;
-        opcode => opcode_bt_ExnMem;
-        dest_addr_in => des_addr_from_ex;
-        ALU_result => ALU_result_from_ex;
-        rt_data => rt_data_from_ex;
-        bran_taken => bran_taken_from_ex;
-        MEM_control_buffer => MEM_control_buffer_from_ex;
-        WB_control_buffer => WB_control_buffer_from_ex;
-        write_reg_txt => programend;
-        MEM_control_buffer_out => MEM_control_buffer_from_mem;
-        WB_control_buffer_out => WB_control_buffer_from_mem;
-        mem_data => memory_data;
-        ALU_data => alu_result_data_from_mem;
-        dest_addr_out => des_addr_from_mem;
-        bran_addr => branch_addr;
+        clock => clock,
+        opcode => opcode_bt_ExnMem,
+        dest_addr_in => des_addr_from_ex,
+        ALU_result => ALU_result_from_ex,
+        rt_data => rt_data_from_ex,
+        bran_taken => bran_taken_from_ex,
+        MEM_control_buffer => MEM_control_buffer_from_ex,
+        WB_control_buffer => WB_control_buffer_from_ex,
+        write_reg_txt => programend,
+        MEM_control_buffer_out => MEM_control_buffer_from_mem,
+        WB_control_buffer_out => WB_control_buffer_from_mem,
+        mem_data => memory_data,
+        ALU_data => alu_result_data_from_mem,
+        dest_addr_out => des_addr_from_mem,
+        bran_addr => branch_addr,
         bran_taken_out => branch_taken
         );
 	
 writeback: WB
 port map (
         clk => clock;
-        memory_data => memory_data;
-        alu_result => alu_result_from_mem;
-        opcode => opcode_bt_MEmnWb;
-        writeback_addr => des_addr_from_mem;
-        WB_control_buffer => WB_control_buffer_from_mem;
-        WB_control_buffer_out => WB_control_buffer_from_wb;
-        writeback_data_out => writeback_register_address;
+        memory_data => memory_data,
+        alu_result => alu_result_from_mem,
+        opcode => opcode_bt_MEmnWb,
+        writeback_addr => des_addr_from_mem,
+        WB_control_buffer => WB_control_buffer_from_mem,
+        WB_control_buffer_out => WB_control_buffer_from_wb,
+        writeback_data_out => writeback_register_address,
         writeback_data_out => writeback_data
         );
 
