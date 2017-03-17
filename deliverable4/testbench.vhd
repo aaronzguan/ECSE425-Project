@@ -162,12 +162,6 @@ architecture behaviour of testbench is
 	
 
 
-	
-
-
-
-	
-
 --------------------------------------------------------------------
 begin
   
@@ -196,51 +190,47 @@ port map (
         IR_in => inst,
         writeback_register_address => writeback_register_address,
        	writeback_register_content => writeback_data, -- in
-              	ex_state_buffer => ,
+        ex_state_buffer => EX_control_buffer_from_ex,
 	instruction_addr_out => inst_addr_from_id,
         jump_addr => jump_addr,
         rs => rs,
         rt => rt,
-        des_addr => des_addr,
+        des_addr => des_addr_from_id,
         signExtImm => signExtImm,
         insert_stall => insert_stall,  
-        EX_control_buffer => EX_control_buffer,
-        MEM_control_buffer => MEM_control_buffer,
-        WB_control_buffer => WB_control_buffer,
-        funct_out => funct,
-        opcode_out => opcode,
+        EX_control_buffer => EX_control_buffer_from_id,
+        MEM_control_buffer => MEM_control_buffer_from_id,
+        WB_control_buffer => WB_control_buffer_from_id,
+        funct_out => funct_from_id,
+        opcode_out => opcode_bt_IdnEx,
         write_reg_txt => programend,
               );
 execute: EX
 port map (
 	clk => clock,
-	instruction_addr_in => inst_addr,
+	instruction_addr_in => inst_addr_from_id,
 	jump_addr => jump_addr,
 	rs => rs,
 	rt => rt,
-	des_addr => des_addr,
+	des_addr => des_addr_from_id,
 	signExtImm => signExtImm,
-	EX_control_buffer => EX_control_buffer,
-	MEM_control_buffer => MEM_control_buffer,
-	WB_control_buffer => WB_control_buffer,
-	opcode_in => opcode,
-	funct_in => funct,
-		MEM_control_buffer_before => , --in
-		WB_control_buffer_before => , --in
+	EX_control_buffer => EX_control_buffer_from_id,
+	MEM_control_buffer => MEM_control_buffer_from_id,
+	WB_control_buffer => WB_control_buffer_from_id,
+	opcode_in => opcode_bt_IdnEx,
+	funct_in => funct_from_id,
+	MEM_control_buffer_before => MEM_control_buffer_from_mem , --in
+	WB_control_buffer_before => WB_control_buffer_from_wb, --in
 	writeback_data => writeback_data, --in
-	branch_addr => branch_addr, -- ??
-	bran_taken => branch_taken,
-	opcode_out => opcode,
-	des_addr_out => des_addr,
-	ALU_result => ALU_result,
-		rt_data => ,
-		MEM_control_buffer_out =>
-		WB_control_buffer_out =>
-		EX_control_buffer_out => EX_control_buffer,
-	
-	
-	
-	
+	branch_addr => bran_addr_from_ex, -- ??
+	bran_taken => bran_taken_from_ex,
+	opcode_out => opcode_bt_ExnMem,
+	des_addr_out => des_addr_from_ex,
+	ALU_result => ALU_result_from_ex,
+	rt_data => rt_data_from_ex,
+	MEM_control_buffer_out => MEM_control_buffer_from_ex,		
+	WB_control_buffer_out => WB_control_buffer_from_ex,				
+	EX_control_buffer_out => EX_control_buffer_from_ex,	
 );
 
 memory: DataMem
