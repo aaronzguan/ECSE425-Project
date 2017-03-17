@@ -15,7 +15,7 @@ use ieee.numeric_std.all;
 entity ALU_control is
   port( opCode : in std_logic_vector(5 downto 0);
   		funct : in std_logic_vector(5 downto 0);
-  		ALU_out : out std_logic_vector(3 downto 0);
+  		ALU_out : out std_logic_vector(3 downto 0)
       );
 end ALU_control;
 
