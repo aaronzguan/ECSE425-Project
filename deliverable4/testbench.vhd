@@ -218,6 +218,15 @@ port map (
 	
 );
 
+clk_process : process
+begin
+	clk <= '0';
+	wait for clk_period/2;
+	clk <= '1';
+	wait for clk_period/2;
+end process;
+
+	
 
 
 end behaviour;
