@@ -75,7 +75,7 @@ begin
           rt_pos<= IR (20 downto 16);
           rd_pos<= IR(15 downto 11);
           immediate<= IR(15 downto 0); 
-          
+          insert_stall <= hazard_detect; 
 reg_process:process(clk)
 begin
   -- initialize the register 
