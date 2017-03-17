@@ -31,8 +31,8 @@ entity DataMem is
 	 MEM_control_buffer: in std_logic_vector(5 downto 0);
 	 WB_control_buffer : in std_logic_vector(5 downto 0);
 	    
-	 MEM_control_buffer_out: in std_logic_vector(5 downto 0); --for ex forward 
-	 WB_control_buffer_out : in std_logic_vector(5 downto 0); -- for wb stage 
+	 MEM_control_buffer_out: out std_logic_vector(5 downto 0); --for ex forward 
+	 WB_control_buffer_out : out std_logic_vector(5 downto 0); -- for wb stage 
          
 	 mem_data: out std_logic_vector(31 downto 0);
          ALU_data: out std_logic_vector(31 downto 0);
@@ -90,7 +90,7 @@ begin
         bran_addr <= std_logic_vector(to_unsigned(0, 32));
         ALU_data <= ALU_result;
         end if;
-	elsif(falling_edge(clk))then
+	elsif(falling_edge(clock))then
 		WB_control_buffer_out<= WB_control_buffer;
        end if;
     end process;
