@@ -23,7 +23,7 @@ ENTITY ifprocess IS
 	GENERIC(
 		ram_size : INTEGER := 4096;
 		--mem_delay : time := 1 ns;
-		clock_period : time := 1 ns
+		--clock_period : time := 1 ns
 	);
 	PORT(
 		clock: IN STD_LOGIC;
@@ -80,13 +80,6 @@ begin
 
 	process (clock)
 	begin
-		--Initialize the SRAM in simulation
-		--IF(now < 1 ps)THEN
-		--	For i in 0 to ram_size-1 LOOP
-		--		ram_block(i) <= std_logic_vector(to_unsigned(i,8));
-		--	END LOOP;
-		--end if;
-               -- Runze 
 		if(rising_edge(clock)) then
 			--Synchronous reset
 			if (reset = '1') then
@@ -101,8 +94,6 @@ begin
 			elsif (Branch_taken = '0') and (insert_stall = '0') then
 				next_addr <= pc_plus4;
 				next_pc <= pc_plus4;
-			--elsif(insert_stall = '1') then
-			--	next_addr <= (others => '0');
 			end if;
 			-- read data if not stall
 			if (insert_stall = '0') then
@@ -121,12 +112,5 @@ begin
 			inst <= inst_i;
 		end if;
 	end process;
-	
-	--waitreq_r_proc: PROCESS (memread)
-	--BEGIN
-	--	IF(memread'event AND memread = '1')THEN
-	--		waitrequest <= '0' after mem_delay, '1' after mem_delay + clock_period;
-	--	END IF;
-	--END PROCESS;
 
 end behavioral;
