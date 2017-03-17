@@ -62,7 +62,7 @@ begin
 				readline(program,mem_line);
 				read(mem_line,read_data); --32bits data
 				for i in 0 to 31 loop
-					char := read_data(i);
+					char := read_data(i+1);
 					if (char = '0') then
 						block_data(31-i) <= '0';
 					else
