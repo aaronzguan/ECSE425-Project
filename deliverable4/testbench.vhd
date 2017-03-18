@@ -19,7 +19,8 @@ architecture behaviour of testbench is
           		BranchAddr : in std_logic_vector (31 downto 0);
           		Branch_taken : in std_logic := '0';
           		next_addr : out std_logic_vector (31 downto 0);
-          		inst : out std_logic_vector (31 downto 0)
+          		inst : out std_logic_vector (31 downto 0);		
+			readfinish : in std_logic := '0'
 		);
   	end component;
   
@@ -143,6 +144,7 @@ architecture behaviour of testbench is
 	signal clock : std_logic;
         signal programend: std_logic := '0';
 	constant clock_period: time := 1 ns;
+	signal readfinish: std_logic := '0';
  	-- signal into if
         signal reset : std_logic;
 	signal insert_stall : std_logic := '0';
@@ -206,8 +208,9 @@ port map (
         BranchAddr => branch_addr,
         Branch_taken => branch_taken,
         next_addr => inst_addr,
-        inst =>  inst
-	);
+        inst =>  inst,	
+	readfinish => readfinish
+);
     
 decode : ID
 generic map (
