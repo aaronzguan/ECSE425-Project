@@ -65,6 +65,7 @@ architecture behaviour of ID is
           SIGNAL funct: std_logic_vector(5 downto 0):="000000";
           SIGNAL dest_address: std_logic_vector(4 downto 0):="00000";
           SIGNAL temp_MEM_control_buffer: std_logic_vector(5 downto 0);
+          SIGNAL temp_WB_control_buffer: std_logic_vector(5 downto 0);
           SIGNAL hazard_detect: std_logic:= '0';
           
 begin
@@ -76,6 +77,26 @@ begin
           rd_pos<= IR(15 downto 11);
           immediate<= IR(15 downto 0); 
           insert_stall <= hazard_detect; 
+
+-- hazard detect 
+hazard_process: process(ex_state_buffer)
+begin
+if(ex_state_buffer(10) = '1') then 
+          if(ex_state_buffer(9 downto 5) = rs_pos or ex_state_buffer(4 downto 0) = rt_pos)then
+             IR <= IR_in;             
+             hazard_detect <= '1';
+           else
+            IR<= x"00000020"; 
+            hazard_detect<= '0'; 
+           end if;
+    end if;
+     
+end process;
+
+
+
+
+
 reg_process:process(clk)
 begin
   -- initialize the register 
@@ -87,22 +108,11 @@ begin
 
    if(clk'event and clk = '1') then
 
--- hazard detect 
 
-      if(ex_state_buffer(10) = '1') then 
-          if(ex_state_buffer(9 downto 5) = rs_pos or ex_state_buffer(4 downto 0) = rt_pos)then
-               hazard_detect <= '1';
-           else 
-                hazard_detect<= '0'; 
-           end if;
-    end if;
-  -- get IR in the rising edge
-       if(hazard_detect = '0') then 
-           IR <= IR_in;
-        else
-           IR<= x"00000020";
-       end if; 
+
+      
 -- get the des_addr through case
+-- this part should be in ex stage, but to make program simpler in ex, do this part in this stage 
        case opcode is 
            -- R instruction 
           when "000000" =>
@@ -139,16 +149,16 @@ begin
          when others =>
                dest_address <="00000";
        end case;
+ -- works on falling edge 
    elsif(clk' event and clk = '0') then
-     if(writeback_register_address /= "00000") then
+         -- write back the data to register      
+      if(writeback_register_address /= "00000") then
           register_block(to_integer(unsigned(writeback_register_address))) <= writeback_register_content;
       end if;
       
-      
+      -- throw data into id and ex buffer 
       rs<= register_block(to_integer(unsigned(rs_pos)));
       rt<= register_block(to_integer(unsigned(rt_pos)));
-     -- rd_addr<=rd_pos;
-      --rt_addr<=rt_pos;
       opcode_out<=IR(31 downto 26);
       funct_out <= funct;
       instruction_addr_out<=instruction_addr;	
@@ -181,49 +191,60 @@ begin
           when "000000" =>
              if(funct = "011010" or funct = "011000" or funct = "001000") then 
               temp_MEM_control_buffer(5) <= '0';
+              temp_WB_control_buffer(5) <= '0';
               else 
               temp_MEM_control_buffer(5) <= '1';
+              temp_WB_control_buffer(5) <= '1';
               end if;
            -- I & J instruction 
            -- lw
          when "100011" => 
                temp_MEM_control_buffer(5) <= '0';
+               temp_WB_control_buffer(5) <= '1';
            -- luiha
          when "001111" => 
               temp_MEM_control_buffer(5) <= '1';
+              temp_WB_control_buffer(5) <= '1';
             -- xori
          when "001110" => 
              temp_MEM_control_buffer(5) <= '1';
+              temp_WB_control_buffer(5) <= '1';
            -- ori
          when "001101" => 
               temp_MEM_control_buffer(5) <= '1';
+              temp_WB_control_buffer(5) <= '1';
             -- andi
          when "001100" => 
                temp_MEM_control_buffer(5) <= '1';
+              temp_WB_control_buffer(5) <= '1';
              -- slti
          when "001010" => 
                temp_MEM_control_buffer(5) <= '1';
+              temp_WB_control_buffer(5) <= '1';
              -- addi
          when "001000" => 
                temp_MEM_control_buffer(5) <= '1';
+              temp_WB_control_buffer(5) <= '1';
              -- jal
          when "000011" => 
                temp_MEM_control_buffer(5) <= '1';
+              temp_WB_control_buffer(5) <= '1';
          when others =>
                temp_MEM_control_buffer(5) <= '0';
+               temp_WB_control_buffer(5) <= '0';
        end case;
        
-       if(opcode = "100011") then 
-           WB_control_buffer(5) <= '1';
-        else 
-           WB_control_buffer(5) <= temp_MEM_control_buffer(5);
-         end if;
-       MEM_control_buffer(5) <= temp_MEM_control_buffer(5);
-       MEM_control_buffer(4 downto 0) <= dest_address;
-       WB_control_buffer(4 downto 0) <= dest_address;
-       des_addr<= dest_address;
+
+      -- MEM_control_buffer(5) <= temp_MEM_control_buffer(5);
+       temp_MEM_control_buffer(4 downto 0) <= dest_address;
+       temp_WB_control_buffer(4 downto 0) <= dest_address;
+       
     end if;
 end process;
+
+des_addr<= dest_address;
+WB_control_buffer <=temp_WB_control_buffer;
+MEM_control_buffer <= temp_MEM_control_buffer;
 
 -- Catherine: to output register value to txt file when program ends  
 file_handler_process: process
