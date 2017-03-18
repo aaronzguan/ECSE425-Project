@@ -28,6 +28,7 @@ entity DataMem is
          ALU_result: in std_logic_vector(31 downto 0);
          rt_data: in std_logic_vector(31 downto 0);
 	 bran_taken: in std_logic;
+	 bran_addr_in: in std_logic_vector(31 downto 0);  -- new added 
 	 MEM_control_buffer: in std_logic_vector(5 downto 0);
 	 WB_control_buffer : in std_logic_vector(5 downto 0);
 	    
@@ -53,11 +54,14 @@ architecture behavior of DataMem is
     
 begin
  MEM_control_buffer_out<= MEM_control_buffer;
+
+
      process(clock)
      begin
        if(clock' event and clock ='1')then
-        dest_addr_out <= dest_addr_in;
-        
+         dest_addr_out <= dest_addr_in;
+          bran_addr <= bran_addr_in;
+          bran_taken_out<= bran_taken;
         --This is a cheap trick to initialize the SRAM in simulation
 		IF(now < 1 ps)THEN
 			For i in 0 to ram_size-1 LOOP
@@ -67,27 +71,26 @@ begin
  
         
         -- the opcode is for branch
-        if(opcode = "000101" or opcode = "000100")then
-          bran_addr <= ALU_result;
-          bran_taken_out<= bran_taken;
+        --if(opcode = "000101" or opcode = "000100")then
+        
 			
         -- the opcode is sw 
-        elsif(opcode = "101011")then
-          bran_addr <= std_logic_vector(to_unsigned(0, 32));
+        if(opcode = "101011")then
+         -- bran_addr <= std_logic_vector(to_unsigned(0, 32));
           for i in 0 to 3 loop
              ram_block(to_integer(unsigned(ALU_result))+ i) <= rt_data(8*i+7 downto 8*i);
           end loop;
           
         -- the opcode is lw 
         elsif(opcode = "100011")then
-         bran_addr <= std_logic_vector(to_unsigned(0, 32));
+       --  bran_addr <= std_logic_vector(to_unsigned(0, 32));
           for i in 0 to 3 loop
              mem_data(8*i+7 downto 8*i) <= ram_block(to_integer(unsigned(ALU_result))+i);
           end loop;
              
         -- the opcode is other
         else
-        bran_addr <= std_logic_vector(to_unsigned(0, 32));
+       -- bran_addr <= std_logic_vector(to_unsigned(0, 32));
         ALU_data <= ALU_result;
         end if;
 	elsif(falling_edge(clock))then
