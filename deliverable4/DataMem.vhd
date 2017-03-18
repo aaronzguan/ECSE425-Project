@@ -98,33 +98,25 @@ begin
        end if;
     end process;
 	       
-    output: process
-		file file_pointer : text;
-        	variable line_content : string(1 to 32);
+    output: process (write_reg_txt)
+		file memoryfile : text;
+		variable line_num : line;
+		variable fstatus: file_open_status;
         	variable reg_value  : std_logic_vector(31 downto 0);
-        	variable line_num : line;
-       		variable i,j : integer := 0;
 	begin
 	if(write_reg_txt = '1') then -- program ends
-		file_open(file_pointer, "memory.txt", write_mode);
+		report "Start writing the memory.txt file";
+		file_open(fstatus, memoryfile, "memory.txt", write_mode);
 		for i in 0 to 8191 loop
 			for j in 0 to 3 loop
 				outdata(7 + 8*j downto 8*j) <= ram_block(i*4+j);
 			end loop;
 			reg_value := outdata;
-			for x in 0 to 31 loop
-				if(reg_value(x) = '0') then
-					line_content(32-x) := '0';
-				else
-					line_content(32-x) := '1';
-				end if;
-			end loop;
-			write(line_num, line_content);
-			writeline(file_pointer, line_num);
-			wait for 10ns;
+			write(line_num, reg_value);
+			writeline(memoryfile, line_num);
 		end loop;
-		file_close(file_pointer);
-		wait;
+		file_close(memoryfile);
+		report "Finish outputing the memory.txt";
 	end if;
 	end process;	
 end behavior;
