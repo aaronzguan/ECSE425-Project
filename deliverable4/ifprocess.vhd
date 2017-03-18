@@ -23,17 +23,11 @@ END ifprocess;
 ARCHITECTURE behavioral of ifprocess IS
 	TYPE MEM IS ARRAY(ram_size-1 downto 0) OF STD_LOGIC_VECTOR(7 DOWNTO 0);
 	SIGNAL ram_block: MEM;
-	--SIGNAL read_address_reg: INTEGER RANGE 0 to ram_size-1;
-	--signal line_counter: integer := 0;
 
 	signal pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
-	--signal next_pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal pc_plus4: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
-	--signal pc_plus4_i: integer := 0;
-	signal block_data: STD_LOGIC_VECTOR(31 DOWNTO 0);
 	signal inst_i: std_logic_vector(31 downto 0);
-    	signal test : std_logic_vector(31 downto 0);
-    --signal readfinish : std_logic := '0';
+
 begin
 	--Read the 'program.txt' file into instruction memory
 	readprogram: process (readfinish)
@@ -55,8 +49,7 @@ begin
 				end loop;
 			end loop;
 		file_close(program);
-	report "finish reading the porgram.txt file and put them into memory"
-        --readfinish <= '1';
+	report "finish reading the porgram.txt file and put them into memory";
 	end process;
 
 
@@ -83,12 +76,6 @@ begin
 		end if;
 
 		if(falling_edge(clock)) then
-			
-			
-            test(31 downto 24) <= ram_block(63);
-            test(23 downto 16) <= ram_block(62);
-            test(15 downto 8) <= ram_block(61);
-            test(7 downto 0) <= ram_block(60);
 			-- read data if not stall
 			if (insert_stall = '0') then
 				--pc <= next_pc;
