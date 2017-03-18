@@ -153,18 +153,18 @@ architecture behaviour of testbench is
 	-- signal into id
         signal inst_addr : std_logic_vector (31 downto 0);
         signal inst : std_logic_vector (31 downto 0);
-	signal writeback_register_address: std_Logic_vector(4 downto 0); 
-	signal writeback_data: std_logic_vector(31 downto 0);  -- also into ex, out of wb
+	signal writeback_register_address: std_Logic_vector(4 downto 0):= (others => '0'); 
+	signal writeback_data: std_logic_vector(31 downto 0):=(others => '0');  -- also into ex, out of wb
         signal EX_control_buffer_from_ex: std_logic_vector(10 downto 0);
        -- signal into ex 
 	  -- from id 
         signal jump_addr: std_logic_vector (25 downto 0);
         signal inst_addr_from_id : std_logic_vector (31 downto 0);
         signal rs: std_logic_vector(31 downto 0);
-	signal rt: std_logic_vector(31 downto 0);
-	signal des_addr_from_id: std_logic_vector(4 downto 0);
-	signal funct_from_id: std_logic_vector(5 downto 0);
-	signal signExtImm: std_logic_vector(31 downto 0);
+	    signal rt: std_logic_vector(31 downto 0);
+	    signal des_addr_from_id: std_logic_vector(4 downto 0);
+	    signal funct_from_id: std_logic_vector(5 downto 0);
+	    signal signExtImm: std_logic_vector(31 downto 0);
         signal opcode_bt_IdnEx: std_logic_vector(5 downto 0); -- out of id 
         signal EX_control_buffer_from_id: std_logic_vector(10 downto 0);
 	signal MEM_control_buffer_from_id: std_logic_vector(5 downto 0);
@@ -174,16 +174,16 @@ architecture behaviour of testbench is
 	signal WB_control_buffer_from_wb: std_logic_vector(5 downto 0);    -- out of wb
          -- singnal into ex end 
         -- signal into mem
-        signal opcode_bt_ExnMem: std_logic_vector(5 downto 0);  -- out of ex 
-        signal ALU_result_from_ex: std_logic_vector(31 downto 0);
-        signal des_addr_from_ex: std_logic_vector(4 downto 0);
-        signal rt_data_from_ex: std_logic_vector(31 downto 0);
-        signal bran_taken_from_ex: std_logic;
-        signal bran_addr_from_ex: std_logic_vector(31 downto 0);
-        signal MEM_control_buffer_from_ex: std_logic_vector(5 downto 0);
-	signal WB_control_buffer_from_ex: std_logic_vector(5 downto 0);
+        signal opcode_bt_ExnMem: std_logic_vector(5 downto 0):=(others => '0');  -- out of ex 
+        signal ALU_result_from_ex: std_logic_vector(31 downto 0):=(others => '0');
+        signal des_addr_from_ex: std_logic_vector(4 downto 0):=(others => '0');
+        signal rt_data_from_ex: std_logic_vector(31 downto 0):=(others => '0');
+        signal bran_taken_from_ex: std_logic:= '0';
+        signal bran_addr_from_ex: std_logic_vector(31 downto 0):=(others => '0');
+        signal MEM_control_buffer_from_ex: std_logic_vector(5 downto 0):=(others => '0');
+	signal WB_control_buffer_from_ex: std_logic_vector(5 downto 0):=(others => '0');
          -- signal into writeback
-        signal opcode_bt_MemnWb: std_logic_vector(5 downto 0);  -- out of mem 
+        signal opcode_bt_MemnWb: std_logic_vector(5 downto 0) ;  -- out of mem 
         signal memory_data: std_logic_vector(31 downto 0);
         signal alu_result_from_mem: std_logic_vector(31 downto 0);
         signal des_addr_from_mem: std_logic_vector(4 downto 0); -- writeback_addr in wb stage 
