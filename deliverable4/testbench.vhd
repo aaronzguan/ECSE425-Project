@@ -102,6 +102,7 @@ architecture behaviour of testbench is
                 ALU_result: in std_logic_vector(31 downto 0);
                 rt_data: in std_logic_vector(31 downto 0);
 	        bran_taken: in std_logic;
+	        bran_addr_in: in std_logic_vector(31 downto 0);  -- new added 
 	        MEM_control_buffer: in std_logic_vector(5 downto 0);
 	        WB_control_buffer : in std_logic_vector(5 downto 0);
 	    
@@ -251,7 +252,7 @@ port map (
 	MEM_control_buffer_before => MEM_control_buffer_from_mem , --in
 	WB_control_buffer_before => WB_control_buffer_from_wb, --in
 	writeback_data => writeback_data, --in
-	branch_addr => bran_addr_from_ex, -- ??
+	branch_addr => bran_addr_from_ex, -- ?? -- added in mem (runze)
 	bran_taken => bran_taken_from_ex,
 	opcode_out => opcode_bt_ExnMem,
 	des_addr_out => des_addr_from_ex,
@@ -270,6 +271,7 @@ port map (
         ALU_result => ALU_result_from_ex,
         rt_data => rt_data_from_ex,
         bran_taken => bran_taken_from_ex,
+	bran_addr_in =>  bran_addr_from_ex,
         MEM_control_buffer => MEM_control_buffer_from_ex,
         WB_control_buffer => WB_control_buffer_from_ex,
         write_reg_txt => programend,
