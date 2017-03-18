@@ -1,28 +1,8 @@
---********************************************************************
--- ECSE 425, Group 6
--- Runze ZHANG(260760723)
--- Date: March 14, 2017
-
--- Description: stage of ID and the buffer between ID and EX
--- analysis the oprand part and return the relative value in register
--- also save the value return from state WB to register 
-
--- build a register with size 32 and 32bits each block 
-
--- Date: March 16, 2017
--- add hazard detect 
--- add controler for forward 
---fix some bug
-
--- add register value output to .txt file
--- Zhou Yining
---********************************************************************
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
--- Catherine: library for file handler
---use ieee.std_logic_arith.all;
-use std.textio.all;
+USE STD.textio.all;
+USE ieee.std_logic_textio.all;
 
 entity ID is
         GENERIC(
@@ -269,6 +249,6 @@ file_handler_process: process (write_reg_txt)
         	file_close(registerfile);
 		report "Finish outputing the register file";
       	end if;
-end process;
+    end process;
 	      
 end behaviour;
