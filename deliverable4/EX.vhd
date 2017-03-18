@@ -93,6 +93,7 @@ funct <= funct_in;
 bran_taken<= temp_bran_taken;
 branch_addr <= temp_branch_addr;
 EX_control_buffer_out <= EX_control_buffer;
+ALU_result <= temp_result; 
 
 reg_rs_ex <= EX_control_buffer(4 downto 0);
 reg_rt_ex <= EX_control_buffer(9 downto 5);
@@ -101,14 +102,14 @@ reg_des_wb <= WB_control_buffer_before(4 downto 0);
 reg_wb_mem <= MEM_control_buffer_before(5);
 reg_wb_wb <= WB_control_buffer_before(5);
 
+pc_plus_4 <= std_logic_vector((unsigned(instruction_addr_in))+ 4);
 
-branch_detect_process: process(clk)
+
+
+forward_detection: process(opcode,data_rs_forward_mem_en,data_rt_forward_mem_en ,data_rs_forward_wb_en ,data_rt_forward_wb_en ) -- mainly works for branch, also pre dect for alu
 begin
-       
-      if(rising_edge(clk))then 
--- part for forward detect, this part is build to fit the forwarding according to the current opcode 
- 
-  rt_flag <= '1';
+-- detect forward situation for different current opcode 
+rt_flag <= '1';
   rs_flag <= '1';
   isSWforward <= '0';
    if(opcode = "000000" and (funct = "000011" or funct = "000010" or funct = "000000")) then 
@@ -122,37 +123,11 @@ begin
       rt_flag <= '0';
       isSWforward <= '1';
   end if;
+ 
+ -- forward part for  branch detection    
+          b_rs <= rs;
+          b_rt <= rt;
 
-
-        pc_plus_4 <= std_logic_vector((unsigned(instruction_addr_in))+ 4);
-        b_rs <= rs;
-        b_rt <= rt;
-       case opcode is
-        -- beq         
-        when "000100" =>
-          -- replace rs or rt if they are forwarded    
-          if(data_rs_forward_mem_en = '1')then 
-               b_rs <= temp_result; -- the result from last instruction
-          end if;    
-          if(data_rt_forward_mem_en = '1')then 
-               b_rt <= temp_result; -- the result from last instruction
-          end if;    
-          if(data_rs_forward_wb_en = '1')then 
-               b_rs <= writeback_data; -- the result from last last instruction
-          end if;    
-          if(data_rt_forward_wb_en = '1')then 
-               b_rt <= writeback_data; -- the result from last last  instruction
-          end if;    
-
-          temp_branch_addr <= pc_plus_4 + std_logic_vector(unsigned(signExtImm)sll  2);      
-         if(b_rs = b_rt) then 
-          temp_bran_taken <= '1';
-         else 
-          temp_bran_taken <= '0';
-          end if;
-        
-     -- bne
-         when "000101" =>
         -- replace rs or rt if they are forwarded    
           if(data_rs_forward_mem_en = '1')then 
                b_rs <= temp_result; -- the result from last instruction
@@ -167,48 +142,11 @@ begin
                b_rt <= writeback_data; -- the result from last last  instruction
           end if;    
 
-          temp_branch_addr <= pc_plus_4 +std_logic_vector(unsigned(signExtImm)sll  2); 
-         if(b_rs = b_rt) then 
-          temp_bran_taken <= '0';
-         else 
-          temp_bran_taken <= '1';
-          end if;
-         -- j 
-          when "000010" => 
-           temp_branch_addr (31 downto 28) <= pc_plus_4(31 downto 28);
-           temp_branch_addr (27 downto 2) <= jump_addr; 
-           temp_branch_addr(1 downto 0) <= "00";
-           temp_bran_taken <= '1';
-         -- jal 
-           when "000011" => 
-           temp_branch_addr (31 downto 28) <= pc_plus_4(31 downto 28);
-           temp_branch_addr (27 downto 2) <= jump_addr; 
-           temp_branch_addr(1 downto 0) <= "00";
-           temp_bran_taken <= '1';
-          -- jr
-          when "000000" =>
-         -- replace rs or rt if they are forwarded    
-          
-            if(funct = "001000")then 
 
-           if(data_rs_forward_mem_en = '1')then 
-               b_rs <= temp_result; -- the result from last instruction
-          end if;    
-          
-          if(data_rs_forward_wb_en = '1')then 
-               b_rs <= writeback_data; -- the result from last last instruction
-          end if;    
-         
-              temp_branch_addr <= b_rs;
-              temp_bran_taken <= '1';
-            end if;
-          when others =>
-             temp_bran_taken <= '0';    
-      end case;
-      end if; 
 end process;
 
--- the ALU and controller code is implemented by Kristin, and modified accordlingly to fit this stage process
+
+
 
 forwarding_logic: process ( reg_rs_ex
                 		, reg_rt_ex
@@ -254,6 +192,62 @@ forwarding_logic: process ( reg_rs_ex
         end process;
 
 
+
+
+
+
+branch_detect_process: process(clk)
+begin
+       
+      if(rising_edge(clk))then 
+-- part for forward detect, this part is build to fit the forwarding according to the current opcode 
+ 
+  
+       case opcode is
+        -- beq         
+        when "000100" => 
+          temp_branch_addr <= pc_plus_4 + std_logic_vector(unsigned(signExtImm)sll  2);      
+         if(b_rs = b_rt) then 
+          temp_bran_taken <= '1';
+         else 
+          temp_bran_taken <= '0';
+          end if;
+        
+     -- bne
+         when "000101" =>
+          temp_branch_addr <= pc_plus_4 +std_logic_vector(unsigned(signExtImm)sll  2); 
+         if(b_rs = b_rt) then 
+          temp_bran_taken <= '0';
+         else 
+          temp_bran_taken <= '1';
+          end if;
+         -- j 
+          when "000010" => 
+           temp_branch_addr (31 downto 28) <= pc_plus_4(31 downto 28);
+           temp_branch_addr (27 downto 2) <= jump_addr; 
+           temp_branch_addr(1 downto 0) <= "00";
+           temp_bran_taken <= '1';
+         -- jal 
+           when "000011" => 
+           temp_branch_addr (31 downto 28) <= pc_plus_4(31 downto 28);
+           temp_branch_addr (27 downto 2) <= jump_addr; 
+           temp_branch_addr(1 downto 0) <= "00";
+           temp_bran_taken <= '1';
+          -- jr
+          when "000000" =>
+         -- replace rs or rt if they are forwarded    
+          
+            if(funct = "001000")then 
+              temp_branch_addr <= b_rs;
+              temp_bran_taken <= '1';
+            end if;
+          when others =>
+             temp_bran_taken <= '0';    
+      end case;
+      end if; 
+end process;
+
+-- the ALU and controller code is implemented by Kristin, and modified accordlingly to fit this stage process
 
 
 alu_process: process(clk)
@@ -419,10 +413,7 @@ begin
                                 data1 <=(others =>'0');
 
 		end case;
-    
-    elsif(falling_edge(clk)) then 
-    -- replace data0 and data1 when forward happend 
-     
+          -- replace data0 and data1 when forward happend 
           if(data_rs_forward_mem_en = '1' and rs_flag = '1')then 
                data0 <= temp_result; -- the result from last instruction
           end if;    
@@ -435,8 +426,12 @@ begin
           if(data_rt_forward_wb_en = '1' and  rt_flag = '1')then 
               data1 <= writeback_data; -- the result from last last  instruction
           end if;    
-          
-          -- for SW instructon forward
+           
+    
+    elsif(falling_edge(clk)) then 
+    
+     
+             -- for SW instructon forward, to deal with the rt data passed to mem stage 
                     if(isSWforward = '1' and (data_rt_forward_mem_en = '1')) then 
                       rt_data <= temp_result;
                     elsif(isSWforward = '1' and (data_rt_forward_wb_en = '1'))then
@@ -444,6 +439,8 @@ begin
                      else
                       rt_data <= rt;
                      end if;
+          
+          
          
                         case ALU_opcode is
 				--add, addi, sw,lw
@@ -532,7 +529,7 @@ begin
                     -- save others things to buffer 
                     opcode_out <=  opcode;
                     des_addr_out <= des_addr; 
-                    ALU_result <= temp_result; 
+                   
                     
                     MEM_control_buffer_out <=   MEM_control_buffer;       
                     WB_control_buffer_out <= WB_control_buffer;
