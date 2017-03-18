@@ -59,7 +59,7 @@ begin
           insert_stall <= hazard_detect; 
 
 -- hazard detect 
-hazard_process: process(ex_state_buffer)
+hazard_process: process(ex_state_buffer,clk)
 begin
 if(ex_state_buffer(10) = '1') then 
           if(ex_state_buffer(9 downto 5) = rs_pos or ex_state_buffer(4 downto 0) = rt_pos)then
@@ -69,6 +69,8 @@ if(ex_state_buffer(10) = '1') then
             IR<= x"00000020"; 
             hazard_detect<= '0'; 
            end if;
+    else
+	    IR <= IR_in;
     end if;
      
 end process;
