@@ -1,16 +1,3 @@
--- ********************************************************************
--- -- ECSE 425, Group 6
--- Zhou Yining(260760795)
--- Date: March 14, 2017
-
--- Description: MEM stage is for load or store data from memory. 
--- For memory access: use the result from ALU as data memory address.
--- For branch: use the ALU result as branch address.
--- For others: output ALU result.
-
--- Date: March 16, 2017
--- add output final memory content to .txt file 
--- ********************************************************************
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
 USE ieee.numeric_std.all;
@@ -47,10 +34,10 @@ end DataMem;
 
 architecture behavior of DataMem is
     -- memory
-    TYPE MEM IS ARRAY(ram_size-1 downto 0) OF STD_LOGIC_VECTOR(7 DOWNTO 0);
+    	TYPE MEM IS ARRAY(ram_size-1 downto 0) OF STD_LOGIC_VECTOR(7 DOWNTO 0);
 	SIGNAL ram_block: MEM;
 	-- output file
-	signal outdata: std_logic_vector(31 downto 0);
+	--signal outdata: std_logic_vector(31 downto 0);
     
 begin
  MEM_control_buffer_out<= MEM_control_buffer;
@@ -58,44 +45,45 @@ begin
 
      process(clock)
      begin
-       if(clock' event and clock ='1')then
-         dest_addr_out <= dest_addr_in;
-          bran_addr <= bran_addr_in;
-          bran_taken_out<= bran_taken;
-        --This is a cheap trick to initialize the SRAM in simulation
-		IF(now < 1 ps)THEN
-			For i in 0 to ram_size-1 LOOP
-				ram_block(i) <= std_logic_vector(to_unsigned(0,8));
-			END LOOP;
-		end if;
- 
+	--This is a cheap trick to initialize the SRAM in simulation
+	if(now < 1 ps)THEN
+		For i in 0 to ram_size-1 LOOP
+			ram_block(i) <= std_logic_vector(to_signed(0,8));
+		END LOOP;
+		report "Start initializing the data memory to zero";
+	end if;
+
+       if(rising_edge(clock))then
+         	dest_addr_out <= dest_addr_in;
+          	bran_addr <= bran_addr_in;
+          	bran_taken_out<= bran_taken;
         
-        -- the opcode is for branch
-        --if(opcode = "000101" or opcode = "000100")then
+        	-- the opcode is for branch
+        	--if(opcode = "000101" or opcode = "000100")then
         
 			
-        -- the opcode is sw 
-        if(opcode = "101011")then
-         -- bran_addr <= std_logic_vector(to_unsigned(0, 32));
-          for i in 0 to 3 loop
-             ram_block(to_integer(unsigned(ALU_result))+ i) <= rt_data(8*i+7 downto 8*i);
-          end loop;
-          
-        -- the opcode is lw 
-        elsif(opcode = "100011")then
-       --  bran_addr <= std_logic_vector(to_unsigned(0, 32));
-          for i in 0 to 3 loop
-             mem_data(8*i+7 downto 8*i) <= ram_block(to_integer(unsigned(ALU_result))+i);
-          end loop;
-             
-        -- the opcode is other
-        else
-       -- bran_addr <= std_logic_vector(to_unsigned(0, 32));
-        ALU_data <= ALU_result;
-        end if;
+        	-- the opcode is sw 
+        	if(opcode = "101011")then
+         	-- bran_addr <= std_logic_vector(to_unsigned(0, 32));
+         		for i in 1 to 4 loop
+             			ram_block((to_integer(signed(ALU_result))) + i - 1) <= rt_data(8*i - 1 downto 8*i - 8);
+				report "rt_data is " & integer'image(to_integer(signed(rt_data(8*i - 1 downto 8*i - 8))));
+				report "store successfully!";
+         	 	end loop;
+        	-- the opcode is lw 
+        	elsif(opcode = "100011")then
+       		--  bran_addr <= std_logic_vector(to_unsigned(0, 32));
+          		for i in 0 to 3 loop
+             			mem_data(8*i+7 downto 8*i) <= ram_block(to_integer(signed(ALU_result))+i);
+         		end loop;
+        	-- the opcode is other
+        	else
+       		-- bran_addr <= std_logic_vector(to_unsigned(0, 32));
+        		ALU_data <= ALU_result;
+        	end if;
 	elsif(falling_edge(clock))then
 		WB_control_buffer_out<= WB_control_buffer;
-       end if;
+       	end if;
     end process;
 	       
     output: process (write_reg_txt)
@@ -107,11 +95,11 @@ begin
 	if(write_reg_txt = '1') then -- program ends
 		report "Start writing the memory.txt file";
 		file_open(fstatus, memoryfile, "memory.txt", write_mode);
-		for i in 0 to 8191 loop
-			for j in 0 to 3 loop
-				outdata(7 + 8*j downto 8*j) <= ram_block(i*4+j);
+		for i in 1 to 8192 loop
+			for j in 1 to 4 loop
+				reg_value(8*j - 1 downto 8*j-8) := ram_block(i*4+j-5);
 			end loop;
-			reg_value := outdata;
+			--reg_value := outdata;
 			write(line_num, reg_value);
 			writeline(memoryfile, line_num);
 		end loop;
