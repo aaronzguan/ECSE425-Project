@@ -3,6 +3,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 USE STD.textio.all;
 USE ieee.std_logic_textio.all;
+use IEEE.std_logic_unsigned.all;
 
 entity ID is
         GENERIC(
@@ -10,6 +11,7 @@ entity ID is
               );
 	PORT( 
               clk: in  std_logic;
+              bran_taken_in: in std_logic;-- from mem
               --hazard_detect: in std_logic;   -- stall the instruction when hazard_detect is 1 
               instruction_addr: in  std_logic_vector(31 downto 0);
               IR_in: in  std_logic_vector(31 downto 0);
@@ -47,9 +49,10 @@ architecture behaviour of ID is
           SIGNAL temp_MEM_control_buffer: std_logic_vector(5 downto 0);
           SIGNAL temp_WB_control_buffer: std_logic_vector(5 downto 0);
           SIGNAL hazard_detect: std_logic:= '0';
+          signal test1: std_logic_vector(31 downto 0 );
+          signal test: std_logic_vector(31 downto 0 );
           
 begin
-
           opcode <= IR(31 downto 26);
           funct  <= IR(5 downto 0);
           rs_pos<= IR(25 downto 21);
@@ -57,11 +60,14 @@ begin
           rd_pos<= IR(15 downto 11);
           immediate<= IR(15 downto 0); 
           insert_stall <= hazard_detect; 
+          test <= register_block(2);
+          test1 <= register_block(2);
 
 -- hazard detect 
 hazard_process: process(ex_state_buffer,clk)
 begin
-if(ex_state_buffer(10) = '1') then 
+            hazard_detect<= '0'; 
+if(ex_state_buffer(10) = '1' and bran_taken_in = '0' ) then 
           if(ex_state_buffer(9 downto 5) = rs_pos or ex_state_buffer(4 downto 0) = rt_pos)then
              IR <= IR_in;             
              hazard_detect <= '1';
@@ -70,32 +76,43 @@ if(ex_state_buffer(10) = '1') then
             hazard_detect<= '0'; 
            end if;
     else
-	    IR <= IR_in;
+       IR <= IR_in; 
     end if;
      
 end process;
 
+-- write back process 
 
-
+wb_process: process(clk,writeback_register_address,writeback_register_content )
+begin
+      -- initialize the register 
+    IF( now < 1 ps )THEN
+    report "initial the register";
+	For i in 0 to register_size-1 LOOP
+	  register_block(i) <= std_logic_vector(to_unsigned(0,32));
+     
+	END LOOP;
+    end if;
+        -- write back the data to register      
+       
+     if (writeback_register_address /= "00000" and now > 4 ns ) then
+        report "write back called ";
+         register_block(to_integer(unsigned(writeback_register_address))) <= writeback_register_content;
+      end if;
+     
+end process;
 
 
 reg_process:process(clk)
 begin
-  -- initialize the register 
-  IF(now < 1 ps)THEN
-	For i in 0 to register_size-1 LOOP
-	  register_block(i) <= std_logic_vector(to_unsigned(0,32));
-	END LOOP;
-    end if;
+ 
 
    if(clk'event and clk = '1') then
 
-
-
-      
 -- get the des_addr through case
 -- this part should be in ex stage, but to make program simpler in ex, do this part in this stage 
-       case opcode is 
+      
+ case opcode is 
            -- R instruction 
           when "000000" =>
              if(funct = "011010" or funct = "011000" or funct = "001000") then 
@@ -131,14 +148,15 @@ begin
          when others =>
                dest_address <="00000";
        end case;
+    
  -- works on falling edge 
-   elsif(clk' event and clk = '0') then
-         -- write back the data to register      
-      if(writeback_register_address /= "00000") then
-          register_block(to_integer(unsigned(writeback_register_address))) <= writeback_register_content;
-      end if;
+   elsif(falling_edge(clk)) then
       
+
+     
+        if(bran_taken_in = '0') then
       -- throw data into id and ex buffer 
+      des_addr<= dest_address;
       rs<= register_block(to_integer(unsigned(rs_pos)));
       rt<= register_block(to_integer(unsigned(rt_pos)));
       opcode_out<=IR(31 downto 26);
@@ -146,11 +164,26 @@ begin
       instruction_addr_out<=instruction_addr;	
       jump_addr <= IR(25 downto 0);
       signExtImm(15 downto 0) <= immediate;
-      if(IR(31 downto 27) = "00110") then
+        
+        if(IR(31 downto 27) = "00110") then
           signExtImm(31 downto 16)<=(31 downto 16 => '0');     
       else
           signExtImm(31 downto 16)<=(31 downto 16 => immediate(15));
       end if;
+      
+      
+        else
+      des_addr<= (others => '0');
+      rs<= (others => '0');
+      rt<= (others => '0');
+      opcode_out<=(others => '0');
+      funct_out <= (others => '0');
+      instruction_addr_out<=(others => '0');	
+      jump_addr <= (others => '0');
+      signExtImm(31 downto 0) <= (others => '0');
+        
+        end if;
+    
      end if;
 end process;
 
@@ -160,6 +193,7 @@ control_process: process(clk)
 begin 
  -- prepare for ex_control buffer 
      if(falling_edge(clk)) then 
+         if(bran_taken_in = '0') then
        if(opcode = "100011") then 
            EX_control_buffer(10) <= '1';
         else 
@@ -220,37 +254,18 @@ begin
       -- MEM_control_buffer(5) <= temp_MEM_control_buffer(5);
        temp_MEM_control_buffer(4 downto 0) <= dest_address;
        temp_WB_control_buffer(4 downto 0) <= dest_address;
-       
+       else
+       temp_WB_control_buffer <= (others=> '0');
+       temp_MEM_control_buffer <= (others=> '0');
+       EX_control_buffer <=(others => '0');
+       end if;
     end if;
+    
 end process;
 
-des_addr<= dest_address;
+
 WB_control_buffer <=temp_WB_control_buffer;
 MEM_control_buffer <= temp_MEM_control_buffer;
 
--- Catherine: to output register value to txt file when program ends  
-file_handler_process: process (write_reg_txt)
-        file registerfile : text;
-	variable line_num : line;
-	variable fstatus: file_open_status;
-        variable reg_value : std_logic_vector(31 downto 0);
-      begin
-	-- when the program ends
-	if(write_reg_txt = '1')then
-		report "Start writing the register file";
-        	file_open(fstatus,registerfile, "register_file.txt", WRITE_MODE);
-		-- register_file.txt has 32 lines
-		-- convert each bit value of reg_value to character for writing 
-       		for i in 0 to 31 loop
-         		reg_value := register_block(i);
-          		--write the line
-          		write(line_num, reg_value); 
-          		--write the contents into txt file
-          		writeline(registerfile, line_num); 
-        	end loop;
-        	file_close(registerfile);
-		report "Finish outputing the register file";
-      	end if;
-    end process;
-	      
+
 end behaviour;
