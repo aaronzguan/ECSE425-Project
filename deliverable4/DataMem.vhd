@@ -23,24 +23,24 @@ entity DataMem is
 	);
     port(
          clock: in std_logic;
-         opcode: in std_logic_vector(5 downto 0);
-         dest_addr_in: in std_logic_vector(4 downto 0);
-         ALU_result: in std_logic_vector(31 downto 0);
-         rt_data: in std_logic_vector(31 downto 0);
-	 bran_taken: in std_logic;
-	 bran_addr_in: in std_logic_vector(31 downto 0);  -- new added 
-	 MEM_control_buffer: in std_logic_vector(5 downto 0);
-	 WB_control_buffer : in std_logic_vector(5 downto 0);
+         opcode: in std_logic_vector(5 downto 0):=(others => '0');
+         dest_addr_in: in std_logic_vector(4 downto 0):=(others => '0');
+         ALU_result: in std_logic_vector(31 downto 0):=(others => '0');
+         rt_data: in std_logic_vector(31 downto 0):=(others => '0');
+	     bran_taken: in std_logic;  -- from mem
+	     bran_addr_in: in std_logic_vector(31 downto 0):=(others => '0');  -- new added 
+	     MEM_control_buffer: in std_logic_vector(5 downto 0):=(others => '0');
+	     WB_control_buffer : in std_logic_vector(5 downto 0):=(others => '0');
 	    
-	 MEM_control_buffer_out: out std_logic_vector(5 downto 0); --for ex forward 
-	 WB_control_buffer_out : out std_logic_vector(5 downto 0); -- for wb stage 
+	     MEM_control_buffer_out: out std_logic_vector(5 downto 0):=(others => '0'); --for ex forward 
+	     WB_control_buffer_out : out std_logic_vector(5 downto 0):=(others => '0'); -- for wb stage 
          
-	 mem_data: out std_logic_vector(31 downto 0);
-         ALU_data: out std_logic_vector(31 downto 0);
-         dest_addr_out: out std_logic_vector(4 downto 0);
-         bran_addr: out std_logic_vector(31 downto 0); -- for if 
-	 bran_taken_out: out std_logic;                -- for if 
-	 write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
+	     mem_data: out std_logic_vector(31 downto 0):=(others => '0');
+         ALU_data: out std_logic_vector(31 downto 0):=(others => '0');
+         dest_addr_out: out std_logic_vector(4 downto 0):=(others => '0');
+         bran_addr: out std_logic_vector(31 downto 0):=(others => '0'); -- for if 
+	     bran_taken_out: out std_logic:= '0';                -- for if 
+	     write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
 	    
          );
 end DataMem;
@@ -122,8 +122,3 @@ begin
 end behavior;
 
          
-         
-        
-        
-        
-
