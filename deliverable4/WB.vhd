@@ -26,7 +26,7 @@ entity WB is
 	      -- for id stage
 	      writeback_data_out: out std_logic_vector(31 downto 0);
               writeback_addr_out: out std_logic_vector(4 downto 0)
-             
+              
 	);
 end WB;
 
