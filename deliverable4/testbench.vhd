@@ -32,6 +32,7 @@ architecture behaviour of testbench is
 			clk: in  std_logic;
           		--hazard_detect: in std_logic;   -- stall the instruction when hazard_detect is 1 
           		instruction_addr: in  std_logic_vector(31 downto 0);
+                bran_taken_in: in std_logic;-- from mem
           		IR_in: in  std_logic_vector(31 downto 0);
           		writeback_register_address: in  std_Logic_vector(4 downto 0);
           		writeback_register_content: in  std_logic_vector(31 downto 0);
@@ -56,6 +57,7 @@ architecture behaviour of testbench is
 	component EX is
 		PORT( 
               		clk: in  std_logic;
+                    
               		-- from id stage 
               		instruction_addr_in: in std_logic_vector(31 downto 0);
               		jump_addr : in std_logic_vector( 25 downto 0); -- changed from 31 dwonto 0 to 25 down to 0
@@ -71,6 +73,7 @@ architecture behaviour of testbench is
               
              		-- from mem stage
              		MEM_control_buffer_before: in std_logic_vector(5 downto 0); --control buffer from last instruction which is in mem stage now
+                    bran_taken_in: in std_logic;-- from mem
              		-- MEM_result: in std_logic_vector(31 downto 0); -- if last inst is load word, its data from mem
              		-- last_opcode : in std_logic_vector(5 downto 0);  -- opcode of last instruction
            
@@ -217,7 +220,8 @@ generic map (
 	register_size => 32
 	) 
 port map (
-	clk => clock,
+	    clk => clock,
+        bran_taken_in =>branch_taken,
         instruction_addr => inst_addr,
         IR_in => inst,
         writeback_register_address => writeback_register_address,
@@ -241,6 +245,7 @@ port map (
 execute: EX
 port map (
 	clk => clock,
+    bran_taken_in =>branch_taken,
 	instruction_addr_in => inst_addr_from_id,
 	jump_addr => jump_addr,
 	rs => rs,
