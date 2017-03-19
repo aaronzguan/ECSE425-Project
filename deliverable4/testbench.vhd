@@ -96,32 +96,32 @@ architecture behaviour of testbench is
 	end component;
 		
   component DataMem is
-       GENERIC(
+         GENERIC(
 		ram_size : INTEGER := 32768
-	      );
-       port(
-                clock: in std_logic;
-                opcode: in std_logic_vector(5 downto 0);
-                dest_addr_in: in std_logic_vector(4 downto 0);
-                 ALU_result: in std_logic_vector(31 downto 0);
-                rt_data: in std_logic_vector(31 downto 0);
-	        bran_taken: in std_logic;
-	        bran_addr_in: in std_logic_vector(31 downto 0);  -- new added 
-	        MEM_control_buffer: in std_logic_vector(5 downto 0);
-	        WB_control_buffer : in std_logic_vector(5 downto 0);
+	);
+    port(
+         clock: in std_logic;
+         opcode: in std_logic_vector(5 downto 0):=(others => '0');
+         dest_addr_in: in std_logic_vector(4 downto 0):=(others => '0');
+         ALU_result: in std_logic_vector(31 downto 0):=(others => '0');
+         rt_data: in std_logic_vector(31 downto 0):=(others => '0');
+	     bran_taken: in std_logic;  -- from mem
+	     bran_addr_in: in std_logic_vector(31 downto 0):=(others => '0');  -- new added 
+	     MEM_control_buffer: in std_logic_vector(5 downto 0):=(others => '0');
+	     WB_control_buffer : in std_logic_vector(5 downto 0):=(others => '0');
 	    
-	        MEM_control_buffer_out: out std_logic_vector(5 downto 0); --for ex forward 
-	        WB_control_buffer_out : out std_logic_vector(5 downto 0); -- for wb stage 
+	     MEM_control_buffer_out: out std_logic_vector(5 downto 0):=(others => '0'); --for ex forward 
+	     WB_control_buffer_out : out std_logic_vector(5 downto 0):=(others => '0'); -- for wb stage 
          
-	        mem_data: out std_logic_vector(31 downto 0);
-                ALU_data: out std_logic_vector(31 downto 0);
-                dest_addr_out: out std_logic_vector(4 downto 0);
-                bran_addr: out std_logic_vector(31 downto 0); -- for if 
-	        bran_taken_out: out std_logic;                -- for if 
-	        write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
+	     mem_data: out std_logic_vector(31 downto 0):=(others => '0');
+         ALU_data: out std_logic_vector(31 downto 0):=(others => '0');
+         dest_addr_out: out std_logic_vector(4 downto 0):=(others => '0');
+         bran_addr: out std_logic_vector(31 downto 0):=(others => '0'); -- for if 
+	     bran_taken_out: out std_logic:= '0';                -- for if 
+	     write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
 	    
          );
-        end component;
+ end component;
 
 
      component WB is
@@ -279,7 +279,7 @@ port map (
         ALU_result => ALU_result_from_ex,
         rt_data => rt_data_from_ex,
         bran_taken => bran_taken_from_ex,
-	    bran_addr_in =>  bran_addr_from_ex,
+	bran_addr_in =>  bran_addr_from_ex,
         MEM_control_buffer => MEM_control_buffer_from_ex,
         WB_control_buffer => WB_control_buffer_from_ex,
         write_reg_txt => programend,
@@ -317,7 +317,7 @@ end process;
 test_process : process
 begin
 	wait for 10000* clock_period;
-	 programend <= '1';
+	programend <= '1';
 	wait;
 end process;
 end behaviour;
