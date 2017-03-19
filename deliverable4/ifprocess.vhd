@@ -27,6 +27,7 @@ ARCHITECTURE behavioral of ifprocess IS
 	signal pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal pc_plus4: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal inst_i: std_logic_vector(31 downto 0);
+    signal max_inst: integer :=0;
 
 begin
 	--Read the 'program.txt' file into instruction memory
@@ -47,21 +48,23 @@ begin
 					ram_block(counter) <= read_data( 8*i-1 downto  8*i-8);
 					counter := counter+1;
 				end loop;
+                
 			end loop;
 		file_close(program);
 	report "finish reading the porgram.txt file and put them into memory";
+    max_inst <= counter - 4;
 	end process;
 
 
 
-    process (pc_plus4)
+    process (pc_plus4,Branch_taken)
     begin
     if(Branch_taken = '1') and (insert_stall = '0')then
 				
 				pc <= BranchAddr;
-			elsif (Branch_taken = '0') and (insert_stall = '0') then
-				
-				pc <= pc_plus4;
+			elsif  (insert_stall = '0') then			
+				     pc <= pc_plus4;
+                    
          end if;
     end process;
 
@@ -86,7 +89,9 @@ begin
 				inst_i(23 downto 16) <= ram_block(to_integer(unsigned(pc))+2);
 				inst_i(15 downto 8) <= ram_block(to_integer(unsigned(pc))+1);
 				inst_i(7 downto 0) <= ram_block(to_integer(unsigned(pc)));
-                next_addr <= pc;
+              		                                    
+                 next_addr<= pc;
+               
 			-- do not read data if stall
 			--elsif (insert_stall = '1') then
 			--	inst_i <= (others => '0');
@@ -94,5 +99,13 @@ begin
 			
 		end if;
 	end process;
+    
+pass_inst:process(inst_i)
+begin
+if( to_integer(unsigned(pc)) > max_inst) then 
+                       inst <= x"00000020";
+                 else
 inst <= inst_i;
+end if;
+end process;
 end behavioral;
