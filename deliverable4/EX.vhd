@@ -8,6 +8,7 @@ entity EX is
         
 	PORT( 
               clk: in  std_logic;
+              bran_taken_in: in std_logic;-- from mem
                -- from id stage 
               instruction_addr_in: in std_logic_vector(31 downto 0);
               jump_addr : in std_logic_vector( 25 downto 0);
@@ -33,7 +34,7 @@ entity EX is
              
               
               -- for mem stage 
-	      branch_addr: out std_logic_vector(31 downto 0);
+	          branch_addr: out std_logic_vector(31 downto 0);
               bran_taken: out std_logic;
               opcode_out: out std_logic_vector(5 downto 0);
               des_addr_out: out std_logic_vector(4 downto 0);
@@ -49,36 +50,36 @@ end EX;
 
 architecture behaviour of EX is 
        
-      signal opcode: std_logic_vector(5 downto 0);
-      signal funct: std_logic_vector(5 downto 0);
+      signal opcode: std_logic_vector(5 downto 0):= (others =>'0');
+      signal funct: std_logic_vector(5 downto 0):= (others =>'0');
       signal temp_bran_taken: std_logic:= '0';
-      signal temp_branch_addr: std_logic_vector(31 downto 0);
-      signal pc_plus_4 : std_logic_vector(31 downto 0);
-      signal ALU_opcode: std_logic_vector(3 downto 0);
-      signal data0 : std_logic_vector(31 downto 0);
-      signal data1 : std_logic_vector(31 downto 0);
-      signal rs_content: integer;
-      signal rt_content: integer;
-      signal imm_content: integer;
-      signal b_rs : std_logic_vector(31 downto 0);
-      signal b_rt : std_logic_vector(31 downto 0);
+      signal temp_branch_addr: std_logic_vector(31 downto 0):= (others =>'0');
+      signal pc_plus_4 : std_logic_vector(31 downto 0):= (others =>'0');
+      signal ALU_opcode: std_logic_vector(3 downto 0):= (others =>'0');
+      signal data0 : std_logic_vector(31 downto 0):= (others =>'0');
+      signal data1 : std_logic_vector(31 downto 0):= (others =>'0');
+      signal rs_content: integer:=0;
+      signal rt_content: integer:=0;
+      signal imm_content: integer:=0;
+      signal b_rs : std_logic_vector(31 downto 0):= (others =>'0');
+      signal b_rt : std_logic_vector(31 downto 0):= (others =>'0');
     -- from alu.vhd implemented by Kristin
-        signal temp_result : std_logic_vector(31 downto 0);
+        signal temp_result : std_logic_vector(31 downto 0):= (others =>'0');
 	signal temp_HILO : std_logic_vector(63 downto 0):= (others =>'0');
 	--signal temp_zero : std_logic;
 	--signal temp_lui : std_logic_vector(32 downto 0);
      -- from forward_unit implemented by Zhong
-          signal reg_rs_ex :  std_logic_vector (4 downto 0)
-        ; signal reg_rt_ex :  std_logic_vector (4 downto 0)
-        ; signal reg_des_mem  :  std_logic_vector (4 downto 0)
-        ; signal reg_des_wb   :   std_logic_vector (4 downto 0)
-        ; signal reg_wb_mem       :  std_logic
-        ; signal reg_wb_wb        :   std_logic
+          signal reg_rs_ex :  std_logic_vector (4 downto 0):= (others =>'0')
+        ; signal reg_rt_ex :  std_logic_vector (4 downto 0):= (others =>'0')
+        ; signal reg_des_mem  :  std_logic_vector (4 downto 0):= (others =>'0')
+        ; signal reg_des_wb   :   std_logic_vector (4 downto 0):= (others =>'0')
+        ; signal reg_wb_mem       :  std_logic:='0'
+        ; signal reg_wb_wb        :   std_logic:='0'
 
-        ; signal data_rs_forward_mem_en :  std_logic
-        ; signal data_rt_forward_mem_en :  std_logic
-        ; signal data_rs_forward_wb_en :  std_logic
-        ; signal data_rt_forward_wb_en :  std_logic;
+        ; signal data_rs_forward_mem_en :  std_logic:='0'
+        ; signal data_rt_forward_mem_en :  std_logic:='0'
+        ; signal data_rs_forward_wb_en :  std_logic:='0'
+        ; signal data_rt_forward_wb_en :  std_logic:='0';
             
          signal rt_flag: std_logic:='0';
          signal rs_flag: std_logic:='0';
@@ -90,9 +91,9 @@ begin
         
 opcode <= opcode_in;
 funct <= funct_in;
-bran_taken<= temp_bran_taken;
-branch_addr <= temp_branch_addr;
-EX_control_buffer_out <= EX_control_buffer;
+
+
+
 ALU_result <= temp_result; 
 
 reg_rs_ex <= EX_control_buffer(4 downto 0);
@@ -104,6 +105,15 @@ reg_wb_wb <= WB_control_buffer_before(5);
 
 pc_plus_4 <= std_logic_vector((unsigned(instruction_addr_in))+ 4);
 
+
+--ex_cbuffer_broadcast: process(bran_taken_in,EX_control_buffer)
+--begin
+   -- if(bran_taken_in = '0') then 
+    EX_control_buffer_out <= EX_control_buffer;
+   -- else 
+   -- EX_control_buffer_out <= (others => '0');
+  --  end if;
+--end process;
 
 
 forward_detection: process(opcode,data_rs_forward_mem_en,data_rt_forward_mem_en ,data_rs_forward_wb_en ,data_rt_forward_wb_en ) -- mainly works for branch, also pre dect for alu
@@ -201,7 +211,8 @@ begin
        
       if(rising_edge(clk))then 
 -- part for forward detect, this part is build to fit the forwarding according to the current opcode 
- 
+        
+          if(bran_taken_in = '0') then 
   
        case opcode is
         -- beq         
@@ -242,17 +253,22 @@ begin
               temp_bran_taken <= '1';
             end if;
           when others =>
-             temp_bran_taken <= '0';    
+             temp_bran_taken <= '0'; 
+             temp_branch_addr <=(others => '0');
       end case;
+      else 
+      temp_bran_taken <= '0';
+      temp_branch_addr <=(others => '0');
+      end if;
       end if; 
 end process;
 
 -- the ALU and controller code is implemented by Kristin, and modified accordlingly to fit this stage process
 
 
-alu_process: process(clk)
+alu_process: process(clk,writeback_data)
 begin
-   if(rising_edge(clk))then 
+   if(rising_edge(clk) and clk'event )then 
      --rs_content <= to_integer(unsigned(rs));
     -- rt_content <= to_integer(unsigned(rt));
     -- imm_content <= to_integer(unsigned(imm));
@@ -413,35 +429,44 @@ begin
                                 data1 <=(others =>'0');
 
 		end case;
-          -- replace data0 and data1 when forward happend 
+           -- replace data0 and data1 when forward happend for last intruction 
           if(data_rs_forward_mem_en = '1' and rs_flag = '1')then 
                data0 <= temp_result; -- the result from last instruction
           end if;    
           if(data_rt_forward_mem_en = '1' and rt_flag = '1')then 
                data1 <= temp_result; -- the result from last instruction
           end if;    
+        end if;
+        
+        if(writeback_data' event) then   
+          -- replace data0 and data1 when forward happend for last last instruction 
+        
           if(data_rs_forward_wb_en = '1' and  rs_flag = '1')then 
                data0 <= writeback_data; -- the result from last last instruction
           end if;    
           if(data_rt_forward_wb_en = '1' and  rt_flag = '1')then 
               data1 <= writeback_data; -- the result from last last  instruction
-          end if;    
+          end if;  
+          end if;
            
     
-    elsif(falling_edge(clk)) then 
+    if(falling_edge(clk) and clk'event ) then 
     
      
              -- for SW instructon forward, to deal with the rt data passed to mem stage 
-                    if(isSWforward = '1' and (data_rt_forward_mem_en = '1')) then 
-                      rt_data <= temp_result;
-                    elsif(isSWforward = '1' and (data_rt_forward_wb_en = '1'))then
-                      rt_data <= writeback_data;
+                    if(bran_taken_in = '1') then 
+                        rt_data <= (others => '0');
                      else
-                      rt_data <= rt;
-                     end if;
+                        if(isSWforward = '1' and (data_rt_forward_mem_en = '1')) then 
+                          rt_data <= temp_result;
+                        elsif(isSWforward = '1' and (data_rt_forward_wb_en = '1'))then
+                          rt_data <= writeback_data;
+                        else
+                          rt_data <= rt;
+                       end if;
+                    end if;
           
-          
-         
+          if(bran_taken_in = '0') then 
                         case ALU_opcode is
 				--add, addi, sw,lw
 				when "0000" =>
@@ -522,17 +547,29 @@ begin
 						
 				when others =>
 					--temp_zero <= '0';
-					temp_result <= "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+					temp_result <= (others => '0');
 
 			     end case;
-                   
+                   else 
+                 temp_result <= (others => '0');
+                 end if;
                     -- save others things to buffer 
+                    
+                    if(bran_taken_in = '1') then 
+                    opcode_out <=  (others => '0');
+                    des_addr_out <= (others => '0');
+                    MEM_control_buffer_out <=  (others => '0');     
+                    WB_control_buffer_out <= (others => '0');
+                    bran_taken<= '0';
+                    branch_addr <=  (others => '0');
+                    else 
                     opcode_out <=  opcode;
                     des_addr_out <= des_addr; 
-                   
-                    
                     MEM_control_buffer_out <=   MEM_control_buffer;       
                     WB_control_buffer_out <= WB_control_buffer;
+                     bran_taken<= temp_bran_taken;
+                    branch_addr <= temp_branch_addr;
+                    end if;
 
     end if;
 
