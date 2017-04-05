@@ -24,9 +24,9 @@ port(
 	m_readdata : in std_logic_vector (7 downto 0);
 	m_write : out std_logic;
 	m_writedata : out std_logic_vector (7 downto 0);
-	m_waitrequest : in std_logic;
+	m_waitrequest : in std_logic
 
-	cachework : in std_logic := '0'
+	--cachework : in std_logic := '0'
 );
 end InstCache;
 
@@ -77,7 +77,7 @@ begin
 
 comp_tag_pro: process(clock,m_waitrequest,reset)
 begin
-	if(rising_edge(clock) and cachework = '1')then 
+	if(rising_edge(clock))then 
           	s_waitrequest <= '1';
           	m_read <= '0';
           	m_write <= '0';
@@ -101,6 +101,8 @@ begin
               			if(s_read = '1') then 
                   		s_readdata <= cache(index)(32*(to_integer(unsigned(addr_word_offset)))+31 downto 32*(to_integer(unsigned(addr_word_offset))));
                   		c_reading <= '1'; 
+
+				s_waitrequest <= '0';
 		------------------ write instrution -------------------
 				--elsif(s_write = '1') then
                   		--cache(index)(32*(to_integer(unsigned(addr_word_offset)))+31 downto 32*(to_integer(unsigned(addr_word_offset)))) <= s_writedata;
@@ -150,12 +152,9 @@ begin
           		end if;
      		end if;
    	-- give the waitrequest signal to cpu, the falling edge of waitrequest stand for the finish of a read or write instruction
-	elsif(falling_edge(clock) and c_reading='1')then
-       		s_waitrequest <= '0';
-       		c_reading <= '0';
-   	elsif(falling_edge(clock) and c_writing='1')then
-       		s_waitrequest<= '0';
-       		c_writing<='0';
+	--elsif(falling_edge(clock) and c_reading='1')then
+       		--s_waitrequest <= '0';
+       		--c_reading <= '0';
    	end if;
 
 	--the process waiting for a memory read finish, if done, then add the offset and pass to memory_read
