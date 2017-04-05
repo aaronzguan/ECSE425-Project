@@ -1,8 +1,6 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.all;
 USE ieee.numeric_std.all;
-USE STD.textio.all;
-USE ieee.std_logic_textio.all;
 
 entity ifstage IS
 	GENERIC(
@@ -15,9 +13,14 @@ entity ifstage IS
 		BranchAddr: in STD_LOGIC_VECTOR (31 DOWNTO 0);
 		Branch_taken: in STD_LOGIC := '0';
 		next_addr: out STD_LOGIC_VECTOR (31 DOWNTO 0);
-		s_waitrequest_inst: in std_logic :='0'; -- from cache
-		s_addr_inst: out std_logic_vector(31 downto 0); -- to cache
-		s_read_inst: out std_logic -- to chche
+		
+		cachestartworking: out std_logic := '0'; -- inform cache to start work
+		s_addr_inst: out std_logic_vector(31 downto 0); -- send address to cache
+		s_read_inst: out std_logic; -- send read signal to cache
+		inst: out std_logic_vector(31 downto 0); --  send instruction to ID
+		s_waitrequest_inst: in std_logic :='0'; -- get waitrequest signal from cache
+		s_readdata_inst: in std_logic_vector(31 downto 0) -- get instruction from cache
+		
 	);
 END ifstage;
 
@@ -25,6 +28,7 @@ ARCHITECTURE behavioral of ifstage IS
 
 	signal pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal pc_plus4: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
+	signal cachework: std_logic := '0';
 
 begin
 
@@ -47,11 +51,24 @@ begin
 	end if;
 
 	if(falling_edge(clock)) then
-		if(insert_stall = '0' and s_waitrequest_inst = '0') then
-			pc_plus4 <= std_logic_vector(to_unsigned( to_integer(unsigned(pc)) + 4,32));
-			next_addr <= pc;
-			s_addr_inst <= pc;
-			s_read_inst <= '1';
+		if(insert_stall = '0') then
+			if (cachework = '0') then
+				pc_plus4 <= std_logic_vector(to_unsigned( to_integer(unsigned(pc)) + 4,32));
+				next_addr <= pc;
+				s_addr_inst <= pc; -- send the next pc
+				s_read_inst <= '1'; -- send the read signal to cache
+				cachestartworking <= '1'; -- let cache work so that s_wairt_request is activated
+				cachework <= '1';
+			elsif (falling_edge(s_waitrequest_inst)) then
+				pc_plus4 <= std_logic_vector(to_unsigned( to_integer(unsigned(pc)) + 4,32));
+				next_addr <= pc;
+				s_addr_inst <= pc; -- send the next pc 
+				s_read_inst <= '1'; -- send the read signal to cache and let cache work
+				inst <= s_readdata_inst; -- get instruction from cache
+		
+			elsif (s_waitrequest_inst = '1') then
+				inst <= x"00000020"; -- If read miss
+			end if;
 		end if;
 	end if;
 end process;
