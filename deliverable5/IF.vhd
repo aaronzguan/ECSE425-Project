@@ -3,9 +3,6 @@ USE ieee.std_logic_1164.all;
 USE ieee.numeric_std.all;
 
 entity ifstage IS
-	GENERIC(
-		ram_size : INTEGER := 4096
-	);
 	PORT(
 		clock: in STD_LOGIC;
 		reset: in std_logic := '0';
@@ -19,7 +16,8 @@ entity ifstage IS
 		s_read_inst: out std_logic; -- send read signal to cache
 		inst: out std_logic_vector(31 downto 0); --  send instruction to ID
 		s_waitrequest_inst: in std_logic :='0'; -- get waitrequest signal from cache
-		s_readdata_inst: in std_logic_vector(31 downto 0) -- get instruction from cache
+		s_readdata_inst: in std_logic_vector(31 downto 0); -- get instruction from cache
+		ismiss: in std_logic := '0'
 		
 	);
 END ifstage;
@@ -49,27 +47,30 @@ begin
 			pc <= (others => '0');
 		end if;
 
-		if(insert_stall = '0') then
-			if(cachework = '0') then -- send the pc if the cache is not working
-				pc_plus4 <= std_logic_vector(to_unsigned( to_integer(unsigned(pc)) + 4,32));
-				next_addr <= pc;
-				s_addr_inst <= pc; -- send the next pc
-				s_read_inst <= '1'; -- send the read signal to cache
-				cachework <= '1';
-			end if;
-		end if;
-
 	elsif(falling_edge(clock)) then
 		if(insert_stall = '0') then
-			if (s_waitrequest_inst = '0') then -- IF can receive the results
-				inst <= s_readdata_inst; -- get instruction from cache
+			if(cachework = '0') then -- send the address if the cache is not working
+				pc_plus4 <= std_logic_vector(to_unsigned( to_integer(unsigned(pc)) + 4,32));
+				next_addr <= pc;
+				s_addr_inst <= pc; -- send the address to cache
+				s_read_inst <= '1'; -- send the read signal to cache
+				cachework <= '1';
+			else
 				s_read_inst <= '0';
 				cachework <= '0';
-			elsif (s_waitrequest_inst = '1') then
-				inst <= x"00000020"; -- If read miss, send 0+0=0 to ID
 			end if;
 		end if;
 	end if;
 end process;
-	
+
+process(ismiss,s_waitrequest_inst,clock)
+begin
+	if(rising_edge(ismiss)) then
+		inst <= x"00000020"; -- read miss, send 0+0=0 to ID
+	elsif(falling_edge(clock) and ismiss='1') then
+		inst <= x"00000020"; -- read miss, send 0+0=0 to ID
+	elsif (falling_edge(s_waitrequest_inst)) then -- IF can receive the results
+		inst <= s_readdata_inst; -- get instruction from cache
+	end if;
+end process;
 end behavioral;
