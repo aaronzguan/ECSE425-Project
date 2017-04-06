@@ -15,6 +15,7 @@ architecture behaviour of testbench is
    		port (
 			clock : in std_logic;
           		reset : in std_logic := '0';
+                        mem_data_stall: in std_logic;
           		insert_stall : in std_logic := '0';
           		BranchAddr : in std_logic_vector (31 downto 0);
           		Branch_taken : in std_logic := '0';
@@ -32,6 +33,7 @@ architecture behaviour of testbench is
 			clk: in  std_logic;
           		--hazard_detect: in std_logic;   -- stall the instruction when hazard_detect is 1 
           		instruction_addr: in  std_logic_vector(31 downto 0);
+                         mem_data_stall: in std_logic;
                 bran_taken_in: in std_logic;-- from mem
           		IR_in: in  std_logic_vector(31 downto 0);
           		writeback_register_address: in  std_Logic_vector(4 downto 0);
@@ -57,7 +59,7 @@ architecture behaviour of testbench is
 	component EX is
 		PORT( 
               		clk: in  std_logic;
-                    
+                         mem_data_stall: in std_logic;
               		-- from id stage 
               		instruction_addr_in: in std_logic_vector(31 downto 0);
               		jump_addr : in std_logic_vector( 25 downto 0); -- changed from 31 dwonto 0 to 25 down to 0
@@ -100,11 +102,13 @@ architecture behaviour of testbench is
 		ram_size : INTEGER := 32768
 	);
     port(
-         clock: in std_logic;
-         opcode: in std_logic_vector(5 downto 0):=(others => '0');
-         dest_addr_in: in std_logic_vector(4 downto 0):=(others => '0');
-         ALU_result: in std_logic_vector(31 downto 0):=(others => '0');
-         rt_data: in std_logic_vector(31 downto 0):=(others => '0');
+             clock: in std_logic;
+             mem_data_stall_in: in std_logic;
+             c_wait_request: in std_logic; -- from data cache 
+             opcode: in std_logic_vector(5 downto 0):=(others => '0');
+             dest_addr_in: in std_logic_vector(4 downto 0):=(others => '0');
+             ALU_result: in std_logic_vector(31 downto 0):=(others => '0');
+             rt_data: in std_logic_vector(31 downto 0):=(others => '0');
 	     bran_taken: in std_logic;  -- from mem
 	     bran_addr_in: in std_logic_vector(31 downto 0):=(others => '0');  -- new added 
 	     MEM_control_buffer: in std_logic_vector(5 downto 0):=(others => '0');
@@ -112,11 +116,11 @@ architecture behaviour of testbench is
 	    
 	     MEM_control_buffer_out: out std_logic_vector(5 downto 0):=(others => '0'); --for ex forward 
 	     WB_control_buffer_out : out std_logic_vector(5 downto 0):=(others => '0'); -- for wb stage 
-         
+             mem_data_stall: out std_logic;
 	     mem_data: out std_logic_vector(31 downto 0):=(others => '0');
-         ALU_data: out std_logic_vector(31 downto 0):=(others => '0');
-         dest_addr_out: out std_logic_vector(4 downto 0):=(others => '0');
-         bran_addr: out std_logic_vector(31 downto 0):=(others => '0'); -- for if 
+             ALU_data: out std_logic_vector(31 downto 0):=(others => '0');
+             dest_addr_out: out std_logic_vector(4 downto 0):=(others => '0');
+             bran_addr: out std_logic_vector(31 downto 0):=(others => '0'); -- for if 
 	     bran_taken_out: out std_logic:= '0';                -- for if 
 	     write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
 	    
@@ -127,6 +131,7 @@ architecture behaviour of testbench is
      component WB is
 	PORT( 
               clk: in  std_logic;
+              mem_data_stall: in std_logic;
               memory_data: in std_logic_vector(31 downto 0);
               alu_result: in std_logic_vector(31 downto 0);
               opcode : in std_logic_vector(5 downto 0);
@@ -145,9 +150,11 @@ architecture behaviour of testbench is
 
 ---------------------------------------------------------------------------------
 	signal clock : std_logic;
+        signal c_wait_request: std_logic;
         signal programend: std_logic := '0';
 	constant clock_period: time := 1 ns;
 	signal readfinish: std_logic := '0';
+        signal mem_data_stall: std_logic:= '0';
  	-- signal into if
         signal reset : std_logic;
 	signal insert_stall : std_logic := '0';
@@ -205,6 +212,7 @@ generic map (
 	ram_size => 4096
 	)
 port map (
+        mem_data_stall => mem_data_stall,
 	clock => clock,
         reset => reset,
         insert_stall => insert_stall,
@@ -220,7 +228,8 @@ generic map (
 	register_size => 32
 	) 
 port map (
-	    clk => clock,
+         mem_data_stall => mem_data_stall,
+	clk => clock,
         bran_taken_in =>branch_taken,
         instruction_addr => inst_addr,
         IR_in => inst,
@@ -245,7 +254,8 @@ port map (
 execute: EX
 port map (
 	clk => clock,
-    bran_taken_in =>branch_taken,
+         mem_data_stall => mem_data_stall,
+        bran_taken_in =>branch_taken,
 	instruction_addr_in => inst_addr_from_id,
 	jump_addr => jump_addr,
 	rs => rs,
@@ -274,6 +284,9 @@ port map (
 memory: DataMem
 port map (
         clock => clock,
+        mem_data_stall_in => mem_data_stall,
+        mem_data_stall => mem_data_stall,
+        c_wait_request=>c_wait_request,
         opcode => opcode_bt_ExnMem,
         dest_addr_in => des_addr_from_ex,
         ALU_result => ALU_result_from_ex,
@@ -294,6 +307,7 @@ port map (
 	
 writeback: WB
 port map (
+        mem_data_stall => mem_data_stall,
         clk => clock,
         memory_data => memory_data,
         alu_result => alu_result_from_mem,

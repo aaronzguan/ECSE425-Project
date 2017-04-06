@@ -10,7 +10,7 @@ entity EX is
               clk: in  std_logic;
               bran_taken_in: in std_logic;-- from mem
 
-              c_wait_request: in std_logic; -- from data cache 
+              --c_wait_request: in std_logic; -- from data cache 
                -- from id stage 
               instruction_addr_in: in std_logic_vector(31 downto 0);
               jump_addr : in std_logic_vector( 25 downto 0);
@@ -213,7 +213,7 @@ forwarding_logic: process ( reg_rs_ex
 branch_detect_process: process(clk)
 begin
        
-      if(rising_edge(clk))then 
+      if(rising_edge(clk) and mem_data_stall = '0')then 
 -- part for forward detect, this part is build to fit the forwarding according to the current opcode 
         
           if(bran_taken_in = '0') then 
@@ -272,7 +272,7 @@ end process;
 
 alu_process: process(clk,writeback_data)
 begin
-   if(rising_edge(clk) and clk'event )then 
+   if(rising_edge(clk) and clk'event and mem_data_stall = '0' )then 
      --rs_content <= to_integer(unsigned(rs));
     -- rt_content <= to_integer(unsigned(rt));
     -- imm_content <= to_integer(unsigned(imm));
@@ -454,7 +454,7 @@ begin
           end if;
            
     
-    if(falling_edge(clk) and clk'event ) then 
+    if(falling_edge(clk) and clk'event and mem_data_stall = '0') then 
     
      
              -- for SW instructon forward, to deal with the rt data passed to mem stage 

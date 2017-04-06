@@ -21,6 +21,7 @@ entity WB is
               opcode : in std_logic_vector(5 downto 0);
               writeback_addr: in std_logic_vector(4 downto 0);
 	      WB_control_buffer: in std_logic_vector(5 downto 0);
+              mem_data_stall: in std_logic;
               -- for ex stage forward
 	      WB_control_buffer_out: out std_logic_vector(5 downto 0);
 	      -- for id stage
@@ -37,7 +38,7 @@ begin
 WB_control_buffer_out <= WB_control_buffer;  
 wb_process:process(clk)
 begin
-   if (clk'event and clk = '1') then 
+   if (clk'event and clk = '1' and mem_data_stall = '0') then 
       if(opcode = "100011") then 
           writeback_data_out <= memory_data;
        else 

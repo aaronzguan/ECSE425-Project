@@ -12,6 +12,7 @@ entity ID is
 	PORT( 
               clk: in  std_logic;
               bran_taken_in: in std_logic;-- from mem
+              mem_data_stall: in std_logic; -- from mem, not pop map yet
               --hazard_detect: in std_logic;   -- stall the instruction when hazard_detect is 1 
               instruction_addr: in  std_logic_vector(31 downto 0);
               IR_in: in  std_logic_vector(31 downto 0);
@@ -49,8 +50,8 @@ architecture behaviour of ID is
           SIGNAL temp_MEM_control_buffer: std_logic_vector(5 downto 0);
           SIGNAL temp_WB_control_buffer: std_logic_vector(5 downto 0);
           SIGNAL hazard_detect: std_logic:= '0';
-          signal test1: std_logic_vector(31 downto 0 );
-          signal test: std_logic_vector(31 downto 0 );
+          --signal test1: std_logic_vector(31 downto 0 );
+       --   signal test: std_logic_vector(31 downto 0 );
           
 begin
           opcode <= IR(31 downto 26);
@@ -60,14 +61,14 @@ begin
           rd_pos<= IR(15 downto 11);
           immediate<= IR(15 downto 0); 
           insert_stall <= hazard_detect; 
-          test <= register_block(2);
-          test1 <= register_block(2);
+      --    test <= register_block(2);
+     --     test1 <= register_block(2);
 
 -- hazard detect 
 hazard_process: process(ex_state_buffer,clk)
 begin
             hazard_detect<= '0'; 
-if(ex_state_buffer(10) = '1' and bran_taken_in = '0' ) then 
+     if(ex_state_buffer(10) = '1' and bran_taken_in = '0' ) then 
           if(ex_state_buffer(9 downto 5) = rs_pos or ex_state_buffer(4 downto 0) = rt_pos)then
              IR <= IR_in;             
              hazard_detect <= '1';
@@ -95,7 +96,7 @@ begin
     end if;
         -- write back the data to register      
        
-     if (writeback_register_address /= "00000" and now > 4 ns ) then
+     if (writeback_register_address /= "00000" and now > 4 ns and mem_data_stall = '0') then
         report "write back called ";
          register_block(to_integer(unsigned(writeback_register_address))) <= writeback_register_content;
       end if;
@@ -107,7 +108,7 @@ reg_process:process(clk)
 begin
  
 
-   if(clk'event and clk = '1') then
+   if(clk'event and clk = '1' and mem_data_stall = '0') then
 
 -- get the des_addr through case
 -- this part should be in ex stage, but to make program simpler in ex, do this part in this stage 
@@ -150,11 +151,11 @@ begin
        end case;
     
  -- works on falling edge 
-   elsif(falling_edge(clk)) then
+   elsif(falling_edge(clk) and mem_data_stall = '0') then
       
 
-     
-        if(bran_taken_in = '0') then
+   
+    if(bran_taken_in = '0') then
       -- throw data into id and ex buffer 
       des_addr<= dest_address;
       rs<= register_block(to_integer(unsigned(rs_pos)));
@@ -170,9 +171,7 @@ begin
       else
           signExtImm(31 downto 16)<=(31 downto 16 => immediate(15));
       end if;
-      
-      
-        else
+     else
       des_addr<= (others => '0');
       rs<= (others => '0');
       rt<= (others => '0');
@@ -192,11 +191,11 @@ end process;
 control_process: process(clk)
 begin 
  -- prepare for ex_control buffer 
-     if(falling_edge(clk)) then 
-         if(bran_taken_in = '0') then
-       if(opcode = "100011") then 
+     if(falling_edge(clk) and mem_data_stall = '0') then 
+      if(bran_taken_in = '0') then
+        if(opcode = "100011") then 
            EX_control_buffer(10) <= '1';
-        else 
+         else 
            EX_control_buffer(10) <= '0';
          end if;
        EX_control_buffer(9 downto 5) <= rt_pos;
