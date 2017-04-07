@@ -114,7 +114,7 @@ begin
                end if;
         
         end if;
-      elsif(falling_edge(s_read)) then 
+      elsif(falling_edge(s_read) or falling_edge(mem_finish)) then 
          s_waitrequest_temp <= '1';
          invoke_writeback <= '0';
          invoke_memread <='0';
@@ -151,7 +151,7 @@ end process;
 
 WBnMRstage: process(m_waitrequest,wb_start,mr_start)
 begin 
-     if(wb_stage = '1' and rising_edge(m_waitrequest)) then 
+     if(wb_stage = '1' and falling_edge(m_waitrequest)) then 
         if(ref_counter1 = 4)then 
           wb_finish <= '1';
           ref_counter1 <= 1;
@@ -161,12 +161,12 @@ begin
           m_addr_temp <=((to_integer(unsigned(block_tag))*512)+(to_integer(unsigned(addr_index))*16)+ref_counter1*4);
           ref_counter1 <= ref_counter1+1;
         end if;
-     elsif(wb_stage = '1' and falling_edge(m_waitrequest)) then 
+     elsif(wb_stage = '1' and rising_edge(m_waitrequest)) then 
            m_write_temp <= '0';
            wb_finish <= '0';
       end if;
 
-if(mr_stage = '1' and rising_edge(m_waitrequest)) then 
+if(mr_stage = '1' and falling_edge(m_waitrequest)) then 
          cache(index)(ref_counter2*32+31 downto ref_counter2*32)<= m_readdata;
         if(ref_counter2 = 3)then 
           mr_finish <= '1';
@@ -176,7 +176,7 @@ if(mr_stage = '1' and rising_edge(m_waitrequest)) then
          m_addr_temp <=((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16)+(ref_counter2+1)*4);
           ref_counter2 <= ref_counter2+1;
         end if;
-     elsif(mr_stage = '1' and falling_edge(m_waitrequest)) then 
+     elsif(mr_stage = '1' and rising_edge(m_waitrequest)) then 
            m_read_temp <= '0';
            mr_finish <= '0';
       end if;
