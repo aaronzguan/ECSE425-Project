@@ -1,4 +1,3 @@
-
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -21,19 +20,19 @@ port(
     
 	m_addr : out integer range 0 to ram_size-1;
 	m_read : out std_logic;
-	m_readdata : in std_logic_vector (7 downto 0);
+	m_readdata : in std_logic_vector (31 downto 0);
 	m_write : out std_logic;
-	m_writedata : out std_logic_vector (7 downto 0);
+	m_writedata : out std_logic_vector (31 downto 0);
+        ismiss: out std_logic;
 	m_waitrequest : in std_logic
 
-	--cachework : in std_logic := '0'
 );
 end InstCache;
 
-architecture arch of InstCache is
+architecture arch of InstCache is 
 
 
-        type cache_array is array (31 downto 0) of std_logic_vector(137 downto 0); --data is 127 downto 0, tag is 133 downto 128, flag is 135 downto 134
+ type cache_array is array (31 downto 0) of std_logic_vector(137 downto 0); --data is 127 downto 0, tag is 133 downto 128, flag is 135 downto 134
 	
 	signal cache: cache_array;
 	signal addr_word_offset: std_logic_vector(1 downto 0); -- 2 bits word offset
@@ -46,27 +45,46 @@ architecture arch of InstCache is
 	signal valid: std_logic := '0';
 	signal dirty: std_logic := '0';
 	signal offset: integer range 0 to 3; 
-	signal ref_counter : integer := 0;
-	signal b_counter : integer := 0;
+	signal ref_counter1 : integer := 1;
+        signal ref_counter2 : integer := 0;
+	--signal b_counter : integer := 0;
 	--signal s_write_waitreq_reg: std_logic := '1';
-	signal s_read_waitreq_reg: std_logic := '1';
-	signal m_write_waitreq_reg: std_logic := '1';
-	signal m_read_waitreq_reg: std_logic := '1';        
+	--signal s_read_waitreq_reg: std_logic := '1';
+	--signal m_write_waitreq_reg: std_logic := '1';
+	--signal m_read_waitreq_reg: std_logic := '1';        
 
         
         signal m_address: integer range 0 to ram_size-1;
-        signal mem_read: std_logic:= '0';
-        signal mem_write: std_logic:='0';
-        signal m_reading: std_logic:='0';
-        signal m_writing: std_logic:='0';
-        signal c_reading: std_logic:='0';
-        signal c_writing: std_logic:='0';
-        signal compare_tag: std_logic:='0';
+       
+        signal s_readdata_temp: std_logic_vector(31 downto 0);
+        signal s_waitrequest_temp: std_logic;
+        signal invoke_writeback: std_logic;
+        signal invoke_memread: std_logic;
+        signal m_writedata_temp: std_logic_vector(31 downto 0);
+        --signal m_readdata_temp: std_logic_vector(31 downto 0); 
+        signal m_addr_temp : integer;
+        signal m_read_temp : std_logic;
+        signal m_write_temp : std_logic;
+        signal wb_stage: std_logic;
+        signal mr_stage: std_logic;
+        signal wb_finish: std_logic;
+        signal mr_finish : std_logic;
+        signal mem_finish: std_logic;
+        signal wb_start: std_logic;
+        signal mr_start: std_logic;   
  
 begin
 
+        s_readdata <= s_readdata_temp;
+        s_waitrequest <= s_waitrequest_temp;
+        m_writedata<= m_writedata_temp;
+        m_addr <= m_addr_temp;
+        m_read<= m_read_temp;
+        m_write<= m_write_temp;
+       
+
      	addr_word_offset <= s_addr(3 downto 2); -- word offset of address
-	addr_byte_offset <= s_addr (1 downto 0); -- byte offset 
+	--addr_byte_offset <= s_addr (1 downto 0); -- byte offset 
 	addr_index <= s_addr(8 downto 4); -- index of address
 	addr_tag <= s_addr(14 downto 9); -- tag of address
 	index <= to_integer(unsigned(addr_index)); --index
@@ -75,123 +93,112 @@ begin
 	valid <= cache(index)(135); -- valid bit of block
 	dirty <= cache(index)(134); -- dirty bit of block
 
-comp_tag_pro: process(clock,m_waitrequest,reset)
-begin
-	if(rising_edge(clock))then 
-          	s_waitrequest <= '1';
-          	m_read <= '0';
-          	m_write <= '0';
-      		if(s_read = '0') then 
-		-- the state of idle, no request from cpu
-            		compare_tag <= '0';
-      		end if;
 
-      		if (compare_tag= '0' and mem_read= '0' and mem_write= '0' and m_reading = '0' and m_writing = '0') then 
-         		if (s_read = '1') then 
-            			compare_tag<='1';
-         		end if;
-       
-      		elsif(compare_tag = '1') then    
-	-- the state of compare_tag, to decide if the data is hit or not, valid or not  
-	-- if hit, then return the value; if not, pass it to write back or memory read accordlingly;
- 
-           		if(addr_tag = block_tag and valid = '1') then 
-              		--hit <= '1';
-		------------------ read instrution -------------------
-              			if(s_read = '1') then 
-                  		s_readdata <= cache(index)(32*(to_integer(unsigned(addr_word_offset)))+31 downto 32*(to_integer(unsigned(addr_word_offset))));
-                  		c_reading <= '1'; 
-
-				s_waitrequest <= '0';
-		------------------ write instrution -------------------
-				--elsif(s_write = '1') then
-                  		--cache(index)(32*(to_integer(unsigned(addr_word_offset)))+31 downto 32*(to_integer(unsigned(addr_word_offset)))) <= s_writedata;
-                  		--c_writing<='1';
-                  		--cache(index)(134)<= '1';
-              			end if;
-           		else 
-            			compare_tag <= '0';
-             		-- hit <= '0';
-           			if(dirty = '1')then         
-               			mem_write <= '1'; 
-           			else 
-               			mem_read <= '1';   
-           			end if;
-          		end if;
-            
-      		elsif(mem_read = '1') then     
-	-- the state of memory read, occured when miss, and read 4-words data from memory byte by byte. 
-	-- after execute, it will be block until the memory access finished. After all data transfer is finished, pass the state to compare_tag
-         		if(ref_counter = 4) then
-           		ref_counter <= 0;              
-           		compare_tag <= '1'; 
-          		cache(index)(135)<='1';
-         		cache(index)(134)<='0';
-          		mem_read<='0'; 
-           		cache(index)(133 downto 128)<=addr_tag;
-        	 	else     
-           		m_read <= '1';  
-           		m_reading <='1';            
-           		m_address <=((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16)+ref_counter*4+b_counter);	          
-           		mem_read<='0'; 
-        	 	end if; 
-      
-     		elsif(mem_write='1') then     
-	-- state of write back, when a dirty miss occured, write all data in cache back to memory byte by byte. 
-	-- after execute, it will be block until the memory access finished. After all data transfer is finished, pass the state to memory read;
-           		if(ref_counter = 4) then
-            		ref_counter <= 0;
-            		mem_write<='0'; 
-           		mem_read<='1';
-          		else 
-           		m_write<='1';
-           		m_writing<='1';
-            		m_address <=((to_integer(unsigned(block_tag))*512)+(to_integer(unsigned(addr_index))*16)+ref_counter*4+b_counter);
-           		m_writedata<=cache (index) ((ref_counter*32 + b_counter*8 + 7) downto (ref_counter*32 + b_counter*8));
-           		mem_write <= '0';
-          		end if;
-     		end if;
-   	-- give the waitrequest signal to cpu, the falling edge of waitrequest stand for the finish of a read or write instruction
-	--elsif(falling_edge(clock) and c_reading='1')then
-       		--s_waitrequest <= '0';
-       		--c_reading <= '0';
-   	end if;
-
-	--the process waiting for a memory read finish, if done, then add the offset and pass to memory_read
-	if (falling_edge(m_waitrequest) and m_reading = '1') then
-         	m_reading <= '0';
-         	cache(index)(ref_counter*32+b_counter*8+7 downto ref_counter*32+b_counter*8)<= m_readdata;
-         	mem_read <= '1';
-       		if(b_counter = 3 ) then 
-                	b_counter <=0;
-                	ref_counter <= ref_counter+1;
-        	else 
-                	b_counter <= b_counter+1;
-       		end if;
-
-	--the process waiting for a write back finish, if done, then add the offset and pass to memory_write  
-	elsif(falling_edge(m_waitrequest) and m_writing='1')then
-         	m_writing <= '0';
-         	mem_write <='1';
-         	if(b_counter = 3 ) then 
-                	b_counter <=0;
-                	ref_counter <= ref_counter+1; 
-         	else 
-                	b_counter <= b_counter+1;
-         	end if;  
-      	end if;
-
-	if(reset'event and reset = '1')then  -- reset operation 
-        	mem_read<= '0';
-        	mem_write<='0';
-        	compare_tag<='0';
-        	m_reading<='0';
-        	m_writing<='0';
-        	c_reading<='0';
-        	c_writing<='0';
-	end if;
+idleNcomp: process(s_read,mem_finish)
+begin 
+     if(rising_edge(mem_finish))then 
+        ismiss<= '0';
+       end if;
+    if(rising_edge(s_read) or rising_edge(mem_finish))then 
+       if(addr_tag = block_tag and valid = '1')then 
+            --hit <= '1';
+               s_readdata_temp<= cache(index)(32*(to_integer(unsigned(addr_word_offset)))+31 downto 32*(to_integer(unsigned(addr_word_offset))));
+               s_waitrequest_temp <= '0';        
+        else  
+                ismiss<= '1';
+               if(dirty = '1') then 
+                   invoke_writeback<= '1';
+                else 
+                   invoke_memread<= '1';
+               end if;
+        
+        end if;
+      elsif(falling_edge(s_read) or falling_edge(mem_finish)) then 
+         s_waitrequest_temp <= '1';
+         invoke_writeback <= '0';
+         invoke_memread <='0';
+    end if;
 end process;
- 
-m_addr<= m_address;
+
+memAccess: process(invoke_writeback, invoke_memread,wb_finish,mr_finish)
+begin
+    if(rising_edge(invoke_writeback))then 
+        wb_start <= '1';
+     elsif(rising_edge(invoke_memread))then 
+        mr_start <= '1';
+     elsif(falling_edge(invoke_writeback))then 
+        wb_start <= '0';
+     --  m_write_temp <='0';
+     elsif(falling_edge(invoke_memread)) then 
+        mr_start <= '0';    
+     -- m_read_temp<='0';
+      end if;
+      if(rising_edge(wb_finish)) then 
+         wb_stage <= '0';
+         mr_start<= '1';
+        elsif(rising_edge(mr_finish)) then
+         mr_stage<= '0'; 
+         mem_finish<= '1';
+         elsif(falling_edge(wb_finish))then 
+            mr_start<= '0';
+         elsif(falling_edge(mr_finish))then 
+             mem_finish <= '0';       
+       end if;
+
+
+end process;
+
+WBnMRstage: process(m_waitrequest,wb_start,mr_start)
+begin 
+     if(wb_stage = '1' and falling_edge(m_waitrequest)) then 
+        if(ref_counter1 = 4)then 
+          wb_finish <= '1';
+          ref_counter1 <= 1;
+          else 
+          m_write_temp <= '1';
+          m_writedata_temp<= cache (index) ( ref_counter1*32+31 downto ref_counter1*32);
+          m_addr_temp <=((to_integer(unsigned(block_tag))*512)+(to_integer(unsigned(addr_index))*16)+ref_counter1*4);
+          ref_counter1 <= ref_counter1+1;
+        end if;
+     elsif(wb_stage = '1' and rising_edge(m_waitrequest)) then 
+           m_write_temp <= '0';
+           wb_finish <= '0';
+      end if;
+
+if(mr_stage = '1' and falling_edge(m_waitrequest)) then 
+         cache(index)(ref_counter2*32+31 downto ref_counter2*32)<= m_readdata;
+        if(ref_counter2 = 3)then 
+          mr_finish <= '1';
+          ref_counter2 <= 0;
+	  --dirty <= '0';
+	  --valid <= '1';
+	  --block_tag <= addr_tag;
+         else 
+          m_read_temp <= '1';
+         m_addr_temp <=((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16)+(ref_counter2+1)*4);
+          ref_counter2 <= ref_counter2+1;
+        end if;
+     elsif(mr_stage = '1' and rising_edge(m_waitrequest)) then 
+           m_read_temp <= '0';
+           mr_finish <= '0';
+      end if;
+
+if(rising_edge(wb_start))then 
+         m_writedata_temp <= cache (index) (31 downto 0);
+         m_write_temp<= '1';
+         m_addr_temp <=((to_integer(unsigned(block_tag))*512)+(to_integer(unsigned(addr_index))*16));
+         wb_stage<= '1'; 
+elsif(rising_edge(mr_start)) then 
+         m_read_temp<='1';
+         m_addr_temp <=((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16));
+         mr_stage<= '1';
+elsif(falling_edge(wb_start))then 
+         m_write_temp <='0';
+elsif(falling_edge(mr_start))then 
+        m_read_temp<='0';
+
+end if;
+
+end process;
 
 end arch;
