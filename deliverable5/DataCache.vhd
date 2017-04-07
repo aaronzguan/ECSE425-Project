@@ -111,7 +111,7 @@ begin
                end if;
         
         end if;
-      elsif(falling_edge(s_read) or falling_edge(mem_finish)) then 
+      elsif(falling_edge(s_read) or falling_edge(s_write) or falling_edge(mem_finish)) then 
          s_waitrequest_temp <= '1';
          invoke_writeback <= '0';
          invoke_memread <='0';
