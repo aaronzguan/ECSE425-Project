@@ -7,22 +7,24 @@ end testbench;
 
 architecture behaviour of testbench is
 
-	component ifprocess is
-		generic(
-			ram_size : integer := 4096
-             		--clock_period : time : 1 ns
-		);
-   		port (
-			clock : in std_logic;
-          		reset : in std_logic := '0';
-                        mem_data_stall: in std_logic;
-          		insert_stall : in std_logic := '0';
-          		BranchAddr : in std_logic_vector (31 downto 0);
-          		Branch_taken : in std_logic := '0';
-          		next_addr : out std_logic_vector (31 downto 0);
-          		inst : out std_logic_vector (31 downto 0);		
-			readfinish : in std_logic := '0'
-		);
+	component ifstage is
+		PORT(
+		clock: in STD_LOGIC;
+		reset: in std_logic := '0';
+		insert_stall: in std_logic := '0';
+		BranchAddr: in STD_LOGIC_VECTOR (31 DOWNTO 0);
+		Branch_taken: in STD_LOGIC := '0';
+		next_addr: out STD_LOGIC_VECTOR (31 DOWNTO 0);
+		
+		s_addr_inst: out std_logic_vector(31 downto 0); -- send address to cache
+		s_read_inst: out std_logic; -- send read signal to cache
+		inst: out std_logic_vector(31 downto 0); --  send instruction to ID
+		s_waitrequest_inst: in std_logic :='0'; -- get waitrequest signal from cache
+		s_readdata_inst: in std_logic_vector(31 downto 0); -- get instruction from cache
+                mem_data_stall: in std_logic; 
+		ismiss: in std_logic := '0'
+		
+	);
   	end component;
   
   	component ID is
@@ -98,32 +100,40 @@ architecture behaviour of testbench is
 	end component;
 		
   component DataMem is
-         GENERIC(
-		ram_size : INTEGER := 32768
-	);
-    port(
-             clock: in std_logic;
-             mem_data_stall_in: in std_logic;
-             c_wait_request: in std_logic; -- from data cache 
-             opcode: in std_logic_vector(5 downto 0):=(others => '0');
-             dest_addr_in: in std_logic_vector(4 downto 0):=(others => '0');
-             ALU_result: in std_logic_vector(31 downto 0):=(others => '0');
-             rt_data: in std_logic_vector(31 downto 0):=(others => '0');
-	     bran_taken: in std_logic;  -- from mem
-	     bran_addr_in: in std_logic_vector(31 downto 0):=(others => '0');  -- new added 
-	     MEM_control_buffer: in std_logic_vector(5 downto 0):=(others => '0');
-	     WB_control_buffer : in std_logic_vector(5 downto 0):=(others => '0');
+        port(
+         	clock: in std_logic;
+         	opcode: in std_logic_vector(5 downto 0):=(others => '0');
+         	dest_addr_in: in std_logic_vector(4 downto 0):=(others => '0');
+         	ALU_result: in std_logic_vector(31 downto 0):=(others => '0');
+         	rt_data: in std_logic_vector(31 downto 0):=(others => '0');
+	     	bran_taken: in std_logic;  -- from mem
+	     	bran_addr_in: in std_logic_vector(31 downto 0):=(others => '0');  -- new added 
+	     	MEM_control_buffer: in std_logic_vector(5 downto 0):=(others => '0');
+	     	WB_control_buffer : in std_logic_vector(5 downto 0):=(others => '0');
 	    
-	     MEM_control_buffer_out: out std_logic_vector(5 downto 0):=(others => '0'); --for ex forward 
-	     WB_control_buffer_out : out std_logic_vector(5 downto 0):=(others => '0'); -- for wb stage 
-             mem_data_stall: out std_logic;
-	     mem_data: out std_logic_vector(31 downto 0):=(others => '0');
-             ALU_data: out std_logic_vector(31 downto 0):=(others => '0');
-             dest_addr_out: out std_logic_vector(4 downto 0):=(others => '0');
-             bran_addr: out std_logic_vector(31 downto 0):=(others => '0'); -- for if 
-	     bran_taken_out: out std_logic:= '0';                -- for if 
-	     write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
+	     	MEM_control_buffer_out: out std_logic_vector(5 downto 0):=(others => '0'); --for ex forward 
+	     	WB_control_buffer_out : out std_logic_vector(5 downto 0):=(others => '0'); -- for wb stage 
+         
+	     	mem_data: out std_logic_vector(31 downto 0):=(others => '0');
+         	ALU_data: out std_logic_vector(31 downto 0):=(others => '0');
+         	dest_addr_out: out std_logic_vector(4 downto 0):=(others => '0');
+        	bran_addr: out std_logic_vector(31 downto 0):=(others => '0'); -- for if 
+	     	bran_taken_out: out std_logic:= '0';                -- for if 
+	     	write_reg_txt: in std_logic := '0'; -- indicate program ends-- from testbench
 	    
+
+                 mem_data_stall_in: in std_logic;
+                 mem_data_stall: out std_logic;
+
+		--cachestartworkting: out std_logic := '0'; -- inform data cache start to work
+		s_addr_data:out std_logic_vector(31 downto 0); -- send address to cache
+		s_read_data: out std_logic; -- send read signal to cache
+		s_readdata_data: in std_logic_vector(31 downto 0); -- get data from cache
+		s_write_data: out std_logic; -- send write signal to cache
+		s_writedata_data: out std_logic_vector(31 downto 0);-- send the writedata to cache
+		s_waitrequest_data: in std_logic := '0' --get waitrequest signal from cache
+                 
+			
          );
  end component;
 
@@ -145,6 +155,78 @@ architecture behaviour of testbench is
 	   );
     end component;
 
+ component InstCache is
+generic(
+	ram_size : INTEGER := 32768
+);
+port(
+	clock : in std_logic;
+	reset : in std_logic;
+	
+	-- Avalon interface --
+	s_addr : in std_logic_vector (31 downto 0);
+	s_read : in std_logic;
+	s_readdata : out std_logic_vector (31 downto 0);
+	--s_write : in std_logic;
+	--s_writedata : in std_logic_vector (31 downto 0);
+	s_waitrequest : out std_logic; 
+    
+	m_addr : out integer range 0 to ram_size-1;
+	m_read : out std_logic;
+	m_readdata : in std_logic_vector (31 downto 0);
+	m_write : out std_logic;
+	m_writedata : out std_logic_vector (31 downto 0);
+        ismiss: out std_logic;
+	m_waitrequest : in std_logic
+
+	--cachework : in std_logic := '0'
+);
+end component;
+
+component  DataCache is
+generic(
+	ram_size : INTEGER := 32768
+);
+port(
+	clock : in std_logic;
+	reset : in std_logic;
+	-- Avalon interface --
+	s_addr : in std_logic_vector (31 downto 0);
+	s_read : in std_logic;
+	s_readdata : out std_logic_vector (31 downto 0);
+	s_write : in std_logic;
+	s_writedata : in std_logic_vector (31 downto 0);
+	s_waitrequest : out std_logic; 
+    
+	m_addr : out integer range 0 to ram_size-1;
+	m_read : out std_logic;
+	m_readdata : in std_logic_vector (31 downto 0);
+	m_write : out std_logic;
+	m_writedata : out std_logic_vector (31 downto 0);
+        ismiss: out std_logic;
+	m_waitrequest : in std_logic
+
+	--cachework : in std_logic := '0'
+);
+end component;
+    
+        
+component memory IS
+	GENERIC(
+		ram_size : INTEGER := 32768;
+		mem_delay : time := 10 ns;
+		clock_period : time := 1 ns
+	);
+	PORT (
+		clock: IN STD_LOGIC;
+		writedata: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+		address: IN INTEGER RANGE 0 TO 4*ram_size - 4;
+		memwrite: IN STD_LOGIC;
+		memread: IN STD_LOGIC;
+		readdata: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
+		waitrequest: OUT STD_LOGIC
+	);
+END component;
 
 
 
@@ -160,6 +242,10 @@ architecture behaviour of testbench is
 	signal insert_stall : std_logic := '0';
 	signal branch_addr : std_logic_vector (31 downto 0):=(others => '0');
 	signal branch_taken : std_logic := '0';
+        signal s_waitrequest_inst: std_logic:= '0';
+        signal s_readdata_inst: std_logic:= '0';
+        signal ismiss: std_logic:= '0';
+
 	-- signal into id
         signal inst_addr : std_logic_vector (31 downto 0):=(others => '0');
         signal inst : std_logic_vector (31 downto 0):=(others => '0');
@@ -192,25 +278,38 @@ architecture behaviour of testbench is
         signal bran_addr_from_ex: std_logic_vector(31 downto 0):=(others => '0');
         signal MEM_control_buffer_from_ex: std_logic_vector(5 downto 0):=(others => '0');
 	signal WB_control_buffer_from_ex: std_logic_vector(5 downto 0):=(others => '0');
+        signal dc_readdata_data: std_logic_vector(31 downto 0):=(others => '0');
+        signal dc_s_waitrequest: std_logic := 0;
+
          -- signal into writeback
         signal opcode_bt_MemnWb: std_logic_vector(5 downto 0):=(others => '0') ;  -- out of mem 
         signal memory_data: std_logic_vector(31 downto 0):=(others => '0');
         signal alu_result_from_mem: std_logic_vector(31 downto 0):=(others => '0');
         signal des_addr_from_mem: std_logic_vector(4 downto 0):=(others => '0'); -- writeback_addr in wb stage 
         signal WB_control_buffer_from_mem: std_logic_vector(5 downto 0):=(others => '0'); -- from 
+        -- signal into InstCache
+        signal ic_s_addr: std_logic_vector(31 downto 0);
+        signal ic_s_read: std_logic;
+        signal ic_m_readdata: std_logic_vector(31 downto 0);
+        signal ic_m_waitrequest: std_logic;
+        -- signal into DataCache
+        signal dc_s_addr: std_logic_vector(31 downto 0);
+        signal dc_s_read: std_logic;
+        signal dc_s_write: std_logic;
+        signal dc_s_writedata: std_logic_vector(31 downto 0);
+        signal dc_m_readdata: std_logic_vector(31 downto 0);
+        signal dc_m_waitrequest: std_logic;
+        -- signal into Main Memory 
+         
+      
 
-	--signal EX_control_buffer: std_logic_vector(10 downto 0); -- not in use
-	--signal MEM_control_buffer: std_logic_vector(5 downto 0);  -- not in use
-	--signal WB_control_buffer: std_logic_vector(5 downto 0);     --not in use
-	
+
 --------------------------------------------------------------------
 
 begin
   
-fetch : ifprocess
-generic map (
-	ram_size => 4096
-	)
+fetch : ifstage
+
 port map (
         mem_data_stall => mem_data_stall,
 	clock => clock,
