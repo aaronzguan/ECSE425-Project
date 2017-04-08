@@ -16,6 +16,7 @@ entity ifstage IS
 		inst: out std_logic_vector(31 downto 0); --  send instruction to ID
 		s_waitrequest_inst: in std_logic :='0'; -- get waitrequest signal from cache
 		s_readdata_inst: in std_logic_vector(31 downto 0); -- get instruction from cache
+                mem_data_stall: in std_logic; 
 		ismiss: in std_logic := '0'
 		
 	);
@@ -31,9 +32,9 @@ begin
 
 process (pc_plus4,Branch_taken)
 begin
-	if(Branch_taken = '1') and (insert_stall = '0')then
+	if(Branch_taken = '1') and (insert_stall = '0') and (mem_data_stall = '0')then
 		pc <= BranchAddr;
-	elsif  (insert_stall = '0') then
+	elsif  (insert_stall = '0' and mem_data_stall = '0') then
 		pc <= pc_plus4;               
 	end if;
 end process;
@@ -49,7 +50,7 @@ begin
 	s_read_inst <= '0';
 
 	elsif(falling_edge(clock)) then
-		if(insert_stall = '0') then
+		if(insert_stall = '0' and mem_data_stall = '0') then
 			if(cachework = '0') then -- send the address if the cache is not working
 				s_read_inst <= '1'; -- send the read signal to cache
 				cachework <= '1';
@@ -60,7 +61,7 @@ end process;
 
 process(ismiss,s_waitrequest_inst,clock)
 begin
-	if(insert_stall = '0') then
+	if(insert_stall = '0' and mem_data_stall = '0') then
 	
 		if(rising_edge(ismiss)) then
 			inst <= x"00000020"; -- read miss, send 0+0=0 to ID
