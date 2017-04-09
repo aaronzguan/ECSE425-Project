@@ -18,14 +18,16 @@ ENTITY memory IS
 		address_instcache: IN INTEGER RANGE 0 TO 4*ram_size - 4 := 0;
 		memwrite_instcache: IN STD_LOGIC:= '0';
 		memread_instcache: IN STD_LOGIC:= '0';
-		readdata_instcache: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
+		--readdata_instcache: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
 		waitrequest_instcache: OUT STD_LOGIC;
+
+		readdata: out STD_LOGIC_VECTOR (31 DOWNTO 0);
 
 		writedata_datacache: IN STD_LOGIC_VECTOR (31 DOWNTO 0):=(others=>'0');
 		address_datacache: IN INTEGER RANGE 0 TO 4*ram_size - 4 := 0;
 		memwrite_datacache: IN STD_LOGIC:= '0';
 		memread_datacache: IN STD_LOGIC:= '0';
-		readdata_datacache: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
+		--readdata_datacache: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
 		waitrequest_datacache: OUT STD_LOGIC;
 
 		readfinish: in std_logic := '0';
@@ -48,6 +50,9 @@ ARCHITECTURE rtl OF memory IS
 
 	signal counter: integer := 0;
 	signal max_inst: integer := 0;
+
+	signal memwait: STD_LOGIC:= '1';
+	signal stallif: std_logic := '0';
 BEGIN
 	addr_instcache <= address_instcache/4;
 	addr_datacache <= address_datacache/4;
@@ -85,19 +90,22 @@ BEGIN
 
 		--This is the actual synthesizable SRAM block
 		IF (clock'event AND clock = '1') THEN
-
-			if (memwrite_instcache = '1') THEN
+			if(memwrite_datacache = '1') then
 				ram_block(addr_datacache) <= writedata_datacache;
+				if(memread_instcache = '1') then
+					stallif <= '1';
+				end if;
+			elsif(memread_datacache = '1') then
+				readdata <= ram_block(addr_datacache);
+				if(memread_instcache = '1') then
+					stallif <= '1';
+				end if;
+			elsif(memread_instcache = '1') then
+				readdata <= ram_block(addr_instcache);
 			end if;
-			if (memwrite_datacache = '1') then
-				ram_block(addr_instcache) <= writedata_instcache;
-			end if;
-		read_address_reg_datacache <= addr_datacache;
-		read_address_reg_instcache <= addr_instcache;
+
 		END IF;
 	END PROCESS;
-	readdata_datacache <= ram_block(read_address_reg_datacache);
-	readdata_instcache <= ram_block(read_address_reg_instcache);
 
 
 	--The waitrequest signal is used to vary response time in simulation
@@ -106,10 +114,9 @@ BEGIN
 	BEGIN
 		IF(rising_edge(memwrite_datacache))THEN
 			write_waitreq_reg_datacache <= '0' after mem_delay, '1' after mem_delay + clock_period;
-
 		END IF;
-	END PROCESS;
 
+	END PROCESS;
 	waitreq_r_proc_datacache: PROCESS (memread_datacache)
 	BEGIN
 		IF(rising_edge(memread_datacache))THEN
@@ -117,22 +124,31 @@ BEGIN
 		END IF;
 	END PROCESS;
 
-	waitreq_w_proc_instcache: process (memwrite_instcache)
+	waitrequest_datacache <= write_waitreq_reg_datacache and read_waitreq_reg_datacache;
+
+
+	memwait <=  write_waitreq_reg_datacache and read_waitreq_reg_datacache;
+
+
+	process(memwait)
+	begin
+		if(falling_edge(memwait)) then
+			if(stallif='1') then
+				readdata <= ram_block(addr_instcache);
+				stallif <= '0';
+			end if;
+		end if;
+	end process;
+			
+	waitreq_r_proc_instcache: PROCESS (stallif)
 	BEGIN
-		IF(rising_edge(memwrite_instcache)) THEN
-			write_waitreq_reg_instcache <= '0' after mem_delay, '1' after mem_delay + clock_period;
-		END IF;
-	END PROCESS;
-	
-	waitreq_r_proc_instcache: PROCESS (memread_instcache)
-	BEGIN
-		IF(rising_edge(memread_instcache))THEN
+		IF(falling_edge(stallif))THEN
 			read_waitreq_reg_instcache <= '0' after mem_delay, '1' after mem_delay + clock_period;
 		END IF;
 	END PROCESS;
 
-	waitrequest_instcache <= write_waitreq_reg_instcache and read_waitreq_reg_instcache;
-	waitrequest_datacache <= write_waitreq_reg_datacache and read_waitreq_reg_datacache;
+	waitrequest_instcache <= read_waitreq_reg_instcache;
+	
 
 
 ----- Output the memory when program ends -------
