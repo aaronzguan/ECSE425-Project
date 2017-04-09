@@ -53,20 +53,32 @@ ARCHITECTURE rtl OF memory IS
 
 	signal memwait: std_logic:= '1';
 	signal stallif: std_logic := '0';
+    signal test: std_logic_vector(31 downto 0);
 
 BEGIN
 	addr_instcache <= address_instcache/4;
 	addr_datacache <= address_datacache/4;
+    test <= ram_block(0);
 
+
+
+
+	--This is the main section of the SRAM model
+	mem_process: PROCESS (memread_instcache,memwrite_datacache,memread_datacache,memwait,clock)	
 --------------------- read program ---------------------
-	readprogram: process (readfinish)
-		file program: text;
+                file program: text;
 		variable mem_line: line;
         	variable fstatus: file_open_status;
 		variable read_data: std_logic_vector(31 downto 0):=(others=>'0');
         	variable counter: integer := 0;
-	begin
-        	report "start read the program.txt file";
+      begin
+     if(now < 1 ps and clock 'event)then  
+       	for i in 0 to ram_size-1 LOOP
+			ram_block(i) <= std_logic_vector(to_unsigned(i,32));
+		end loop;
+		report "Finish initilizing the memory";
+
+       	report "start read the program.txt file";
 		file_open(fstatus,program,"program.txt", read_mode);
 		while not endfile(program) loop
 			readline(program,mem_line);
@@ -78,18 +90,10 @@ BEGIN
 		report "finish reading the porgram.txt file and put them into memory";
     		max_inst <= counter;
 		--- initialize the rest block ---
-		for i in max_inst to ram_size-1 LOOP
-			ram_block(i) <= std_logic_vector(to_unsigned(i,32));
-		end loop;
-		report "Finish initilizing the memory";
-	end process;
+
+        end if;
 ----------------------------------------------------------
-
-
-	--This is the main section of the SRAM model
-	mem_process: PROCESS (memread_instcache,memwrite_datacache,memread_datacache,memwait)
-	BEGIN
-		
+        
 		if(rising_edge(memwrite_datacache)) then
 			if(stallif = '0') then
 				ram_block(addr_datacache) <= writedata_datacache;
@@ -140,9 +144,9 @@ BEGIN
 		--end if;
 	--end process;
 			
-	waitreq_r_proc_instcache: PROCESS (stallif)
+	waitreq_r_proc_instcache: PROCESS (stallif,memread_instcache)
 	BEGIN
-		IF(falling_edge(stallif))THEN
+		IF(falling_edge(stallif)or (rising_edge(memread_instcache) and stallif = '0' ))THEN
 			read_waitreq_reg_instcache <= '0' after mem_delay, '1' after mem_delay + clock_period;
 		END IF;
 	END PROCESS;
