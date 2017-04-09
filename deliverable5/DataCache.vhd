@@ -52,21 +52,21 @@ architecture arch of DataCache is
         
         signal m_address: integer range 0 to ram_size-1;
        
-        signal s_readdata_temp: std_logic_vector(31 downto 0);
-        signal s_waitrequest_temp: std_logic;
-        signal invoke_writeback: std_logic;
-        signal invoke_memread: std_logic;
-        signal m_writedata_temp: std_logic_vector(31 downto 0);
-        signal m_addr_temp : integer;
-        signal m_read_temp : std_logic;
-        signal m_write_temp : std_logic;
-        signal wb_stage: std_logic;
-        signal mr_stage: std_logic;
-        signal wb_finish: std_logic;
-        signal mr_finish : std_logic;
-        signal mem_finish: std_logic;
-        signal wb_start: std_logic;
-        signal mr_start: std_logic;   
+        signal s_readdata_temp: std_logic_vector(31 downto 0) := (others => '0');
+        signal s_waitrequest_temp: std_logic:= '0';
+        signal invoke_writeback: std_logic:= '0';
+        signal invoke_memread: std_logic:= '0';
+        signal m_writedata_temp: std_logic_vector(31 downto 0) :=(others => '0');
+        signal m_addr_temp : integer:= 0 ;
+        signal m_read_temp : std_logic:= '0';
+        signal m_write_temp : std_logic:= '0';
+        signal wb_stage: std_logic:= '0';
+        signal mr_stage: std_logic:= '0';
+        signal wb_finish: std_logic:= '0';
+        signal mr_finish : std_logic:= '0';
+        signal mem_finish: std_logic:= '0';
+        signal wb_start: std_logic:= '0';
+        signal mr_start: std_logic:= '0';   
  
 begin
 
