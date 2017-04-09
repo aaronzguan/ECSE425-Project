@@ -14,9 +14,9 @@ entity ifstage IS
 		s_addr_inst: out std_logic_vector(31 downto 0); -- send address to cache
 		s_read_inst: out std_logic; -- send read signal to cache
 		inst: out std_logic_vector(31 downto 0); --  send instruction to ID
-		s_waitrequest_inst: in std_logic :='0'; -- get waitrequest signal from cache
+		s_waitrequest_inst: in std_logic :='1'; -- get waitrequest signal from cache
 		s_readdata_inst: in std_logic_vector(31 downto 0); -- get instruction from cache
-                mem_data_stall: in std_logic; 
+                mem_data_stall: in std_logic:='0'; 
 		ismiss: in std_logic := '0'
 		
 	);
