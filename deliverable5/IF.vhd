@@ -5,19 +5,19 @@ USE ieee.numeric_std.all;
 entity ifstage IS
 	PORT(
 		clock: in STD_LOGIC;
-		reset: in std_logic := '0';
-		insert_stall: in std_logic := '0';
+		reset: in std_logic;
+		insert_stall: in std_logic;
 		BranchAddr: in STD_LOGIC_VECTOR (31 DOWNTO 0);
-		Branch_taken: in STD_LOGIC := '0';
+		Branch_taken: in STD_LOGIC;
 		next_addr: out STD_LOGIC_VECTOR (31 DOWNTO 0);
 		
 		s_addr_inst: out std_logic_vector(31 downto 0); -- send address to cache
 		s_read_inst: out std_logic; -- send read signal to cache
 		inst: out std_logic_vector(31 downto 0); --  send instruction to ID
-		s_waitrequest_inst: in std_logic :='1'; -- get waitrequest signal from cache
+		s_waitrequest_inst: in std_logic; -- get waitrequest signal from cache
 		s_readdata_inst: in std_logic_vector(31 downto 0); -- get instruction from cache
-                mem_data_stall: in std_logic:='0'; 
-		ismiss: in std_logic := '0'
+                mem_data_stall: in std_logic; 
+		ismiss: in std_logic
 		
 	);
 END ifstage;
