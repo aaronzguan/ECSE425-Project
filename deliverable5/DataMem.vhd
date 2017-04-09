@@ -39,7 +39,7 @@ entity DataMem is
 		s_readdata_data: in std_logic_vector(31 downto 0); -- get data from cache
 		s_write_data: out std_logic; -- send write signal to cache
 		s_writedata_data: out std_logic_vector(31 downto 0);-- send the writedata to cache
-		s_waitrequest_data: in std_logic := '0' --get waitrequest signal from cache
+		s_waitrequest_data: in std_logic := '1' --get waitrequest signal from cache
                  
 			
          );
