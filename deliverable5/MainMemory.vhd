@@ -119,15 +119,21 @@ BEGIN
 
 	--The waitrequest signal is used to vary response time in simulation
 	--Read and write should never happen at the same time.
-	waitreq_w_proc_datacache: PROCESS (memwrite_datacache)
+	waitreq_w_proc_datacache: PROCESS (memwrite_datacache,recover_flag)
 	BEGIN
+                if(falling_edge(recover_flag))then 
+                    write_waitreq_reg_datacache<='1';
+                     end if;
 		IF(rising_edge(memwrite_datacache))THEN
 			write_waitreq_reg_datacache <= '0' after mem_delay, '1' after mem_delay + clock_period;
 		END IF;
-
 	END PROCESS;
-	waitreq_r_proc_datacache: PROCESS (memread_datacache,clock)
+
+	waitreq_r_proc_datacache: PROCESS (memread_datacache,recover_flag)
 	BEGIN
+                 if(falling_edge(recover_flag))then 
+                    read_waitreq_reg_datacache<='1';
+                     end if;
 		IF(rising_edge(memread_datacache))THEN
 			read_waitreq_reg_datacache <= '0' after mem_delay, '1' after mem_delay + clock_period;
 		END IF;
@@ -154,9 +160,10 @@ BEGIN
                         
 		END IF;
 	END PROCESS;
-       recover_inst_read:process(clock,read_waitreq_reg_instcache)
+      
+              recover :process(clock,read_waitreq_reg_instcache,write_waitreq_reg_datacache,read_waitreq_reg_instcache)
         begin 
-             if(falling_edge(read_waitreq_reg_instcache))then 
+             if(falling_edge(read_waitreq_reg_instcache) or falling_edge(read_waitreq_reg_datacache) or falling_edge(write_waitreq_reg_datacache))then 
                    recover_flag <= '1';
               elsif(rising_edge(clock))then 
                    recover_flag<= '0';
