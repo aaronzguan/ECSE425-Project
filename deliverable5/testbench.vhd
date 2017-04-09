@@ -308,7 +308,7 @@ component memory is
         signal dc_s_addr: std_logic_vector(31 downto 0):=(others => '0');
         signal dc_s_read: std_logic:='0';
         signal dc_s_write: std_logic:='0';
-        signal dc_s_writedata: std_logic_vector(31 downto 0);:=(others => '0')
+        signal dc_s_writedata: std_logic_vector(31 downto 0):=(others => '0');
         signal dc_m_waitrequest: std_logic:='1';
         -- signal into Main Memory 
          
