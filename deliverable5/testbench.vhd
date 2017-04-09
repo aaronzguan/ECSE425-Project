@@ -19,9 +19,9 @@ architecture behaviour of testbench is
 		s_addr_inst: out std_logic_vector(31 downto 0); -- send address to cache
 		s_read_inst: out std_logic; -- send read signal to cache
 		inst: out std_logic_vector(31 downto 0); --  send instruction to ID
-		s_waitrequest_inst: in std_logic :='0'; -- get waitrequest signal from cache
+		s_waitrequest_inst: in std_logic :='1'; -- get waitrequest signal from cache
 		s_readdata_inst: in std_logic_vector(31 downto 0); -- get instruction from cache
-                mem_data_stall: in std_logic; 
+                mem_data_stall: in std_logic:='0'; 
 		ismiss: in std_logic := '0'
 		
 	);
@@ -36,7 +36,7 @@ architecture behaviour of testbench is
           		--hazard_detect: in std_logic;   -- stall the instruction when hazard_detect is 1 
           		instruction_addr: in  std_logic_vector(31 downto 0);
                          mem_data_stall: in std_logic;
-                bran_taken_in: in std_logic;-- from mem
+                	bran_taken_in: in std_logic;-- from mem
           		IR_in: in  std_logic_vector(31 downto 0);
           		writeback_register_address: in  std_Logic_vector(4 downto 0);
           		writeback_register_content: in  std_logic_vector(31 downto 0);
@@ -131,7 +131,7 @@ architecture behaviour of testbench is
 		s_readdata_data: in std_logic_vector(31 downto 0); -- get data from cache
 		s_write_data: out std_logic; -- send write signal to cache
 		s_writedata_data: out std_logic_vector(31 downto 0);-- send the writedata to cache
-		s_waitrequest_data: in std_logic := '0' --get waitrequest signal from cache
+		s_waitrequest_data: in std_logic := '1' --get waitrequest signal from cache
                  
 			
          );
@@ -177,7 +177,7 @@ port(
 	m_write : out std_logic;
 	m_writedata : out std_logic_vector (31 downto 0);
         ismiss: out std_logic;
-	m_waitrequest : in std_logic
+	m_waitrequest : in std_logic:='1'
 
 	--cachework : in std_logic := '0'
 );
@@ -204,7 +204,7 @@ port(
 	m_write : out std_logic;
 	m_writedata : out std_logic_vector (31 downto 0);
         ismiss: out std_logic;
-	m_waitrequest : in std_logic
+	m_waitrequest : in std_logic:='1'
 
 	--cachework : in std_logic := '0'
 );
@@ -254,8 +254,8 @@ component memory is
 	signal insert_stall : std_logic := '0';
 	signal branch_addr : std_logic_vector (31 downto 0):=(others => '0');
 	signal branch_taken : std_logic := '0';
-        signal s_waitrequest_inst: std_logic:= '0';
-        signal s_readdata_inst: std_logic_vector(31 downto 0);
+        signal s_waitrequest_inst: std_logic:= '1';
+        signal s_readdata_inst: std_logic_vector(31 downto 0):=(others => '0');
         signal ismiss: std_logic:= '0';
 
 	-- signal into id
@@ -291,7 +291,7 @@ component memory is
         signal MEM_control_buffer_from_ex: std_logic_vector(5 downto 0):=(others => '0');
 	signal WB_control_buffer_from_ex: std_logic_vector(5 downto 0):=(others => '0');
         signal dc_readdata_data: std_logic_vector(31 downto 0):=(others => '0');
-        signal dc_s_waitrequest: std_logic := '0';
+        signal dc_s_waitrequest: std_logic := '1';
 
          -- signal into writeback
         signal opcode_bt_MemnWb: std_logic_vector(5 downto 0):=(others => '0') ;  -- out of mem 
@@ -300,16 +300,16 @@ component memory is
         signal des_addr_from_mem: std_logic_vector(4 downto 0):=(others => '0'); -- writeback_addr in wb stage 
         signal WB_control_buffer_from_mem: std_logic_vector(5 downto 0):=(others => '0'); -- from 
         -- signal into InstCache
-        signal ic_s_addr: std_logic_vector(31 downto 0);
-        signal ic_s_read: std_logic;
-        signal m_readdata: std_logic_vector(31 downto 0);
-        signal ic_m_waitrequest: std_logic;
+        signal ic_s_addr: std_logic_vector(31 downto 0):=(others => '0');
+        signal ic_s_read: std_logic:='0';
+        signal m_readdata: std_logic_vector(31 downto 0):=(others => '0');
+        signal ic_m_waitrequest: std_logic:='1';
         -- signal into DataCache
-        signal dc_s_addr: std_logic_vector(31 downto 0);
-        signal dc_s_read: std_logic;
-        signal dc_s_write: std_logic;
-        signal dc_s_writedata: std_logic_vector(31 downto 0);
-        signal dc_m_waitrequest: std_logic;
+        signal dc_s_addr: std_logic_vector(31 downto 0):=(others => '0');
+        signal dc_s_read: std_logic:='0';
+        signal dc_s_write: std_logic:='0';
+        signal dc_s_writedata: std_logic_vector(31 downto 0);:=(others => '0')
+        signal dc_m_waitrequest: std_logic:='1';
         -- signal into Main Memory 
          
         signal writedata_instcache:std_logic_vector (31 downto 0):=(others=>'0');
