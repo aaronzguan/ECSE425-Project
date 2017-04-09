@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 entity InstCache is
 generic(
-	ram_size : INTEGER := 32768
+	ram_size : INTEGER := 32
 );
 port(
 	clock : in std_logic;
@@ -23,7 +23,7 @@ port(
 	m_readdata : in std_logic_vector (31 downto 0);
 	m_write : out std_logic;
 	m_writedata : out std_logic_vector (31 downto 0);
-        ismiss: out std_logic;
+        ismiss: out std_logic:='0';
 	m_waitrequest : in std_logic
 
 	--cachework : in std_logic := '0'
@@ -33,7 +33,7 @@ end InstCache;
 architecture arch of InstCache is 
 
 
- type cache_array is array (31 downto 0) of std_logic_vector(137 downto 0); --data is 127 downto 0, tag is 133 downto 128, flag is 135 downto 134
+ type cache_array is array (31 downto 0) of std_logic_vector(135 downto 0); --data is 127 downto 0, tag is 133 downto 128, flag is 135 downto 134
 	
 	signal cache: cache_array;
 	signal addr_word_offset: std_logic_vector(1 downto 0); -- 2 bits word offset
@@ -57,23 +57,23 @@ architecture arch of InstCache is
         
         signal m_address: integer range 0 to ram_size-1;
        
-        signal s_readdata_temp: std_logic_vector(31 downto 0) := (others=>'0');
-        signal s_waitrequest_temp: std_logic:= '1';
-        signal invoke_writeback: std_logic:= '0';
-        signal invoke_memread: std_logic:= '0';
-        signal m_writedata_temp: std_logic_vector(31 downto 0):= (others=>'0');
+        signal s_readdata_temp: std_logic_vector(31 downto 0):=(others=>'0');
+        signal s_waitrequest_temp: std_logic:='1';
+        signal invoke_writeback: std_logic:='0';
+        signal invoke_memread: std_logic:='0';
+        signal m_writedata_temp: std_logic_vector(31 downto 0):=(others=>'0');
         --signal m_readdata_temp: std_logic_vector(31 downto 0); 
-        signal m_addr_temp : integer := 0;
-        signal m_read_temp : std_logic:= '0';
-        signal m_write_temp : std_logic:= '0';
-        signal wb_stage: std_logic:= '0';
-        signal mr_stage: std_logic:= '0';
-        signal wb_finish: std_logic:= '0';
-        signal mr_finish : std_logic:= '0';
-        signal mem_finish: std_logic:= '0';
-        signal wb_start: std_logic:= '0';
-        signal mr_start: std_logic:= '0';    
- 
+        signal m_addr_temp : integer:=0;
+        signal m_read_temp : std_logic:='0';
+        signal m_write_temp : std_logic:='0';
+        signal wb_stage: std_logic:='0';
+        signal mr_stage: std_logic:='0';
+        signal wb_finish: std_logic:='0';
+        signal mr_finish : std_logic:='0';
+        signal mem_finish: std_logic:='0';
+        signal wb_start: std_logic:='0';
+        signal mr_start: std_logic:='0';   
+        signal test : std_logic_vector(135 downto 0):=(others=>'0');
 begin
 
         s_readdata <= s_readdata_temp;
@@ -82,7 +82,7 @@ begin
         m_addr <= m_addr_temp;
         m_read<= m_read_temp;
         m_write<= m_write_temp;
-       
+        test<= cache(1);
 
      	addr_word_offset <= s_addr(3 downto 2); -- word offset of address
 	--addr_byte_offset <= s_addr (1 downto 0); -- byte offset 
@@ -135,10 +135,8 @@ begin
      -- m_read_temp<='0';
       end if;
       if(rising_edge(wb_finish)) then 
-         wb_stage <= '0';
          mr_start<= '1';
         elsif(rising_edge(mr_finish)) then
-         mr_stage<= '0'; 
          mem_finish<= '1';
          elsif(falling_edge(wb_finish))then 
             mr_start<= '0';
@@ -149,12 +147,19 @@ begin
 
 end process;
 
-WBnMRstage: process(m_waitrequest,wb_start,mr_start)
+WBnMRstage: process(m_waitrequest,wb_start,mr_start,clock)
 begin 
+     if (now < 1 ps) then 
+        report "cache is initialized";
+            for i in 0 to 31 LOOP
+		cache(i) <=std_logic_vector(to_unsigned(0,136));
+	end loop;
+      end if;
      if(wb_stage = '1' and falling_edge(m_waitrequest)) then 
         if(ref_counter1 = 4)then 
           wb_finish <= '1';
           ref_counter1 <= 1;
+          wb_stage <= '0';
           else 
           m_write_temp <= '1';
           m_writedata_temp<= cache (index) ( ref_counter1*32+31 downto ref_counter1*32);
@@ -170,7 +175,10 @@ if(mr_stage = '1' and falling_edge(m_waitrequest)) then
          cache(index)(ref_counter2*32+31 downto ref_counter2*32)<= m_readdata;
         if(ref_counter2 = 3)then 
           mr_finish <= '1';
+          mr_stage<= '0'; 
           ref_counter2 <= 0;
+          cache(index)(135)<= '1';
+          cache(index)(134)<= '0';
          else 
           m_read_temp <= '1';
          m_addr_temp <=((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16)+(ref_counter2+1)*4);
