@@ -53,7 +53,7 @@ architecture arch of DataCache is
         signal m_address: integer range 0 to ram_size-1;
        
         signal s_readdata_temp: std_logic_vector(31 downto 0) := (others => '0');
-        signal s_waitrequest_temp: std_logic:= '0';
+        signal s_waitrequest_temp: std_logic:= '1';
         signal invoke_writeback: std_logic:= '0';
         signal invoke_memread: std_logic:= '0';
         signal m_writedata_temp: std_logic_vector(31 downto 0) :=(others => '0');
