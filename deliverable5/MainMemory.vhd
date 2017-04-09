@@ -29,7 +29,7 @@ ENTITY memory IS
 		memread_datacache: IN STD_LOGIC;
 		--readdata_datacache: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
 		waitrequest_datacache: OUT STD_LOGIC;
-
+                max_inst: out integer :=0;
 		readfinish: in std_logic;
 		write_reg_txt: in std_logic -- indicate program ends-- from testbench
 
@@ -49,11 +49,15 @@ ARCHITECTURE rtl OF memory IS
 	SIGNAL addr_datacache: INTEGER RANGE 0 TO ram_size-1 :=0;
 
 	signal counter: integer := 0;
-	signal max_inst: integer := 0;
+	--signal max_inst: integer := 0;
         signal recover_flag: std_logic:='0';
 	signal memwait: std_logic:= '1';
 	signal stallif: std_logic := '0';
         signal if_wait_in_line : std_logic:= '0';
+         
+        signal ic_r_waitflag: std_logic := '0';
+        signal dc_r_waitflag: std_logic:='0';
+        signal dc_w_waitflag: std_logic:='0';
         signal test: std_logic_vector(31 downto 0);
 
         
@@ -79,7 +83,7 @@ BEGIN
 			ram_block(i) <= std_logic_vector(to_unsigned(i,32));
 		end loop;
 		report "Finish initilizing the memory";
-
+                
        	report "start read the program.txt file";
 		file_open(fstatus,program,"program.txt", read_mode);
 		while not endfile(program) loop
@@ -122,7 +126,12 @@ BEGIN
 	waitreq_w_proc_datacache: PROCESS (memwrite_datacache,recover_flag)
 	BEGIN
                 if(falling_edge(recover_flag))then 
-                    write_waitreq_reg_datacache<='1';
+                           if(dc_w_waitflag = '1')then 
+                               write_waitreq_reg_datacache<='1','0' after 9.5*clock_period;
+                               dc_w_waitflag <= '0';
+                            else
+                      write_waitreq_reg_datacache<='1';
+                       end if;
                      end if;
 		IF(rising_edge(memwrite_datacache))THEN
 			write_waitreq_reg_datacache <= '0' after mem_delay, '1' after mem_delay + clock_period;
@@ -132,7 +141,12 @@ BEGIN
 	waitreq_r_proc_datacache: PROCESS (memread_datacache,recover_flag)
 	BEGIN
                  if(falling_edge(recover_flag))then 
-                    read_waitreq_reg_datacache<='1';
+                           if(dc_r_waitflag = '1')then 
+                               read_waitreq_reg_datacache<='1','0' after 9.5*clock_period;
+                               dc_r_waitflag <= '0';
+                            else
+                       read_waitreq_reg_datacache<='1';
+                       end if;
                      end if;
 		IF(rising_edge(memread_datacache))THEN
 			read_waitreq_reg_datacache <= '0' after mem_delay, '1' after mem_delay + clock_period;
@@ -153,10 +167,16 @@ BEGIN
 	waitreq_r_proc_instcache: PROCESS (if_wait_in_line,memread_instcache,recover_flag)
 	BEGIN
                  if(falling_edge(recover_flag))then 
-                    read_waitreq_reg_instcache<='1';
+                           if(ic_r_waitflag = '1')then 
+                               read_waitreq_reg_instcache<='1','0' after 9.5*clock_period;
+                               ic_r_waitflag <= '0';
+                            else
+                       read_waitreq_reg_instcache<='1';
+                       end if;
                      end if;
 		IF(falling_edge(if_wait_in_line)or (rising_edge(memread_instcache) and stallif = '0' ))THEN
 			read_waitreq_reg_instcache <='0' after mem_delay;
+                        ic_r_waitflag <= '1';
                         
 		END IF;
 	END PROCESS;

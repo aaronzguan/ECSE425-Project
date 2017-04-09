@@ -157,36 +157,45 @@ begin
       end if;
      if(wb_stage = '1' and falling_edge(m_waitrequest)) then 
         if(ref_counter1 = 4)then 
-          wb_finish <= '1';
-          ref_counter1 <= 1;
-          wb_stage <= '0';
+         wb_finish <= '1';
+        --  ref_counter1 <= 1;
+         -- wb_stage <= '0';
           else 
           m_write_temp <= '1';
           m_writedata_temp<= cache (index) ( ref_counter1*32+31 downto ref_counter1*32);
           m_addr_temp <=((to_integer(unsigned(block_tag))*512)+(to_integer(unsigned(addr_index))*16)+ref_counter1*4);
-          ref_counter1 <= ref_counter1+1;
         end if;
      elsif(wb_stage = '1' and rising_edge(m_waitrequest)) then 
            m_write_temp <= '0';
-           wb_finish <= '0';
+       if(ref_counter1 = 4)then 
+          wb_finish <= '0';
+          ref_counter1 <= 1;
+          wb_stage <= '0';
+        else 
+        ref_counter1 <= ref_counter1+1;
+         end if;
       end if;
 
 if(mr_stage = '1' and falling_edge(m_waitrequest)) then 
          cache(index)(ref_counter2*32+31 downto ref_counter2*32)<= m_readdata;
         if(ref_counter2 = 3)then 
+          report "rad finish "; 
           mr_finish <= '1';
-          mr_stage<= '0'; 
-          ref_counter2 <= 0;
           cache(index)(135)<= '1';
-          cache(index)(134)<= '0';
+          cache(index)(134)<= '0';                    
          else 
           m_read_temp <= '1';
-         m_addr_temp <=((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16)+(ref_counter2+1)*4);
-          ref_counter2 <= ref_counter2+1;
+          m_addr_temp <=((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16)+(ref_counter2+1)*4);  
         end if;
      elsif(mr_stage = '1' and rising_edge(m_waitrequest)) then 
-           m_read_temp <= '0';
-           mr_finish <= '0';
+           m_read_temp <= '0';     
+       if(ref_counter2 = 3)then 
+          mr_finish <= '0';
+          mr_stage<= '0'; 
+          ref_counter2 <= 0;
+        else 
+       ref_counter2 <= ref_counter2+1;
+        end if;
       end if;
 
 if(rising_edge(wb_start))then 
