@@ -14,24 +14,24 @@ ENTITY memory IS
 	PORT (
 		clock: IN STD_LOGIC;
 
-		writedata_instcache: IN STD_LOGIC_VECTOR (31 DOWNTO 0):=(others=>'0');
-		address_instcache: IN INTEGER RANGE 0 TO 4*ram_size - 4 := 0;
-		memwrite_instcache: IN STD_LOGIC:= '0';
-		memread_instcache: IN STD_LOGIC:= '0';
+		writedata_instcache: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+		address_instcache: IN INTEGER RANGE 0 TO 4*ram_size - 4;
+		memwrite_instcache: IN STD_LOGIC;
+		memread_instcache: IN STD_LOGIC;
 		--readdata_instcache: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
 		waitrequest_instcache: OUT STD_LOGIC;
 
 		readdata: out STD_LOGIC_VECTOR (31 DOWNTO 0);
 
-		writedata_datacache: IN STD_LOGIC_VECTOR (31 DOWNTO 0):=(others=>'0');
-		address_datacache: IN INTEGER RANGE 0 TO 4*ram_size - 4 := 0;
-		memwrite_datacache: IN STD_LOGIC:= '0';
-		memread_datacache: IN STD_LOGIC:= '0';
+		writedata_datacache: IN STD_LOGIC_VECTOR (31 DOWNTO 0);
+		address_datacache: IN INTEGER RANGE 0 TO 4*ram_size - 4;
+		memwrite_datacache: IN STD_LOGIC;
+		memread_datacache: IN STD_LOGIC;
 		--readdata_datacache: OUT STD_LOGIC_VECTOR (31 DOWNTO 0);
 		waitrequest_datacache: OUT STD_LOGIC;
 
-		readfinish: in std_logic := '0';
-		write_reg_txt: in std_logic := '0' -- indicate program ends-- from testbench
+		readfinish: in std_logic;
+		write_reg_txt: in std_logic -- indicate program ends-- from testbench
 
 	);
 END memory;
@@ -39,9 +39,9 @@ END memory;
 ARCHITECTURE rtl OF memory IS
 	TYPE MEM IS ARRAY(ram_size-1 downto 0) OF STD_LOGIC_VECTOR(31 DOWNTO 0);
 	SIGNAL ram_block: MEM;
-	SIGNAL read_address_reg_instcache: INTEGER RANGE 0 to ram_size-1 :=0;
-	SIGNAL read_address_reg_datacache: INTEGER RANGE 0 to ram_size-1 :=0;
-	SIGNAL write_waitreq_reg_instcache: STD_LOGIC := '1';
+	--SIGNAL read_address_reg_instcache: INTEGER RANGE 0 to ram_size-1 :=0;
+	--SIGNAL read_address_reg_datacache: INTEGER RANGE 0 to ram_size-1 :=0;
+	--SIGNAL write_waitreq_reg_instcache: STD_LOGIC := '1';
 	SIGNAL read_waitreq_reg_instcache: STD_LOGIC := '1';
 	SIGNAL write_waitreq_reg_datacache: STD_LOGIC := '1';
 	SIGNAL read_waitreq_reg_datacache: STD_LOGIC := '1';
@@ -51,8 +51,9 @@ ARCHITECTURE rtl OF memory IS
 	signal counter: integer := 0;
 	signal max_inst: integer := 0;
 
-	signal memwait: STD_LOGIC:= '1';
+	signal memwait: std_logic:= '1';
 	signal stallif: std_logic := '0';
+
 BEGIN
 	addr_instcache <= address_instcache/4;
 	addr_datacache <= address_datacache/4;
@@ -74,37 +75,41 @@ BEGIN
 			counter := counter+1;
 		end loop;
 		file_close(program);
-	report "finish reading the porgram.txt file and put them into memory";
-    	max_inst <= counter;
-	--- initialize the rest block ---
-	for i in max_inst to ram_size-1 LOOP
-		ram_block(i) <= std_logic_vector(to_unsigned(0,32));
-	end loop;
+		report "finish reading the porgram.txt file and put them into memory";
+    		max_inst <= counter;
+		--- initialize the rest block ---
+		for i in max_inst to ram_size-1 LOOP
+			ram_block(i) <= std_logic_vector(to_unsigned(i,32));
+		end loop;
+		report "Finish initilizing the memory";
 	end process;
-
+----------------------------------------------------------
 
 
 	--This is the main section of the SRAM model
-	mem_process: PROCESS (clock)
+	mem_process: PROCESS (memread_instcache,memwrite_datacache,memread_datacache,memwait)
 	BEGIN
-
-		--This is the actual synthesizable SRAM block
-		IF (clock'event AND clock = '1') THEN
-			if(memwrite_datacache = '1') then
+		
+		if(rising_edge(memwrite_datacache)) then
+			if(stallif = '0') then
 				ram_block(addr_datacache) <= writedata_datacache;
-				if(memread_instcache = '1') then
+				if(rising_edge(memread_instcache)) then
 					stallif <= '1';
 				end if;
-			elsif(memread_datacache = '1') then
-				readdata <= ram_block(addr_datacache);
-				if(memread_instcache = '1') then
-					stallif <= '1';
-				end if;
-			elsif(memread_instcache = '1') then
-				readdata <= ram_block(addr_instcache);
 			end if;
-
-		END IF;
+		elsif(rising_edge(memread_datacache)) then
+			if(stallif = '0') then
+				readdata <= ram_block(addr_datacache);
+				if(rising_edge(memread_instcache)) then
+					stallif <= '1';
+				end if;
+			end if;
+		elsif(rising_edge(memread_instcache)) then
+				readdata <= ram_block(addr_instcache);
+		elsif(falling_edge(memwait)) then 
+				readdata <= ram_block(addr_instcache);
+				stallif <= '0';
+		end if;
 	END PROCESS;
 
 
@@ -125,20 +130,15 @@ BEGIN
 	END PROCESS;
 
 	waitrequest_datacache <= write_waitreq_reg_datacache and read_waitreq_reg_datacache;
-
-
 	memwait <=  write_waitreq_reg_datacache and read_waitreq_reg_datacache;
 
-
-	process(memwait)
-	begin
-		if(falling_edge(memwait)) then
-			if(stallif='1') then
-				readdata <= ram_block(addr_instcache);
-				stallif <= '0';
-			end if;
-		end if;
-	end process;
+	--process(memwait)
+	--begin
+		--if(falling_edge(memwait) and stallif = '1') then
+				--readdata <= ram_block(addr_instcache);
+				--stallif <= '0';
+		--end if;
+	--end process;
 			
 	waitreq_r_proc_instcache: PROCESS (stallif)
 	BEGIN
@@ -171,5 +171,6 @@ BEGIN
 		report "Finish outputing the memory.txt";
 	end if;
 	end process;	
+----------------------------------------------------------
 
 END rtl;
