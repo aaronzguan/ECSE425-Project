@@ -50,15 +50,17 @@ ARCHITECTURE rtl OF memory IS
 
 	signal counter: integer := 0;
 	signal max_inst: integer := 0;
-
+        signal recover_flag: std_logic:='0';
 	signal memwait: std_logic:= '1';
 	signal stallif: std_logic := '0';
-    signal test: std_logic_vector(31 downto 0);
+        signal if_wait_in_line : std_logic:= '0';
+        signal test: std_logic_vector(31 downto 0);
 
+        
 BEGIN
 	addr_instcache <= address_instcache/4;
 	addr_datacache <= address_datacache/4;
-    test <= ram_block(0);
+    test <= ram_block(1);
 
 
 
@@ -94,25 +96,23 @@ BEGIN
         end if;
 ----------------------------------------------------------
         
-		if(rising_edge(memwrite_datacache)) then
-			if(stallif = '0') then
-				ram_block(addr_datacache) <= writedata_datacache;
-				if(rising_edge(memread_instcache)) then
-					stallif <= '1';
-				end if;
-			end if;
-		elsif(rising_edge(memread_datacache)) then
-			if(stallif = '0') then
-				readdata <= ram_block(addr_datacache);
-				if(rising_edge(memread_instcache)) then
-					stallif <= '1';
-				end if;
-			end if;
-		elsif(rising_edge(memread_instcache)) then
-				readdata <= ram_block(addr_instcache);
+               if(rising_edge(memwrite_datacache)or rising_edge(memread_datacache)) then                      
+                       stallif <= '1';    
+		elsif(falling_edge(memwrite_datacache)) then
+				ram_block(addr_datacache) <= writedata_datacache;					
+		elsif(falling_edge(memread_datacache)) then     
+				readdata <= ram_block(addr_datacache);	
+		elsif(falling_edge(memread_instcache) and stallif = '0' ) then
+                --report "exe";
+		 		readdata <= ram_block(addr_instcache);
+                elsif(falling_edge(memread_instcache) and stallif = '1' ) then
+                                 if_wait_in_line <= '1';
 		elsif(falling_edge(memwait)) then 
-				readdata <= ram_block(addr_instcache);
 				stallif <= '0';
+                               if(if_wait_in_line = '1')then                           
+                                  readdata <= ram_block(addr_instcache);
+                                  if_wait_in_line <='0';
+                                end if;
 		end if;
 	END PROCESS;
 
@@ -126,7 +126,7 @@ BEGIN
 		END IF;
 
 	END PROCESS;
-	waitreq_r_proc_datacache: PROCESS (memread_datacache)
+	waitreq_r_proc_datacache: PROCESS (memread_datacache,clock)
 	BEGIN
 		IF(rising_edge(memread_datacache))THEN
 			read_waitreq_reg_datacache <= '0' after mem_delay, '1' after mem_delay + clock_period;
@@ -144,12 +144,27 @@ BEGIN
 		--end if;
 	--end process;
 			
-	waitreq_r_proc_instcache: PROCESS (stallif,memread_instcache)
+	waitreq_r_proc_instcache: PROCESS (if_wait_in_line,memread_instcache,recover_flag)
 	BEGIN
-		IF(falling_edge(stallif)or (rising_edge(memread_instcache) and stallif = '0' ))THEN
-			read_waitreq_reg_instcache <= '0' after mem_delay, '1' after mem_delay + clock_period;
+                 if(falling_edge(recover_flag))then 
+                    read_waitreq_reg_instcache<='1';
+                     end if;
+		IF(falling_edge(if_wait_in_line)or (rising_edge(memread_instcache) and stallif = '0' ))THEN
+			read_waitreq_reg_instcache <='0' after mem_delay;
+                        
 		END IF;
 	END PROCESS;
+       recover_inst_read:process(clock,read_waitreq_reg_instcache)
+        begin 
+             if(falling_edge(read_waitreq_reg_instcache))then 
+                   recover_flag <= '1';
+              elsif(rising_edge(clock))then 
+                   recover_flag<= '0';
+               end if;
+
+        end process;
+
+
 
 	waitrequest_instcache <= read_waitreq_reg_instcache;
 	
