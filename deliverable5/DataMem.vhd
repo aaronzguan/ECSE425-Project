@@ -31,15 +31,15 @@ entity DataMem is
 	    
 
                  mem_data_stall_in: in std_logic;
-                 mem_data_stall: out std_logic;
+                 mem_data_stall: out std_logic:='0';
 
 		--cachestartworkting: out std_logic := '0'; -- inform data cache start to work
-		s_addr_data:out std_logic_vector(31 downto 0); -- send address to cache
-		s_read_data: out std_logic; -- send read signal to cache
+		s_addr_data:out std_logic_vector(31 downto 0):=(others => '0'); -- send address to cache
+		s_read_data: out std_logic:='0'; -- send read signal to cache
 		s_readdata_data: in std_logic_vector(31 downto 0); -- get data from cache
-		s_write_data: out std_logic; -- send write signal to cache
-		s_writedata_data: out std_logic_vector(31 downto 0);-- send the writedata to cache
-		s_waitrequest_data: in std_logic := '1' --get waitrequest signal from cache
+		s_write_data: out std_logic:='0'; -- send write signal to cache
+		s_writedata_data: out std_logic_vector(31 downto 0):=(others => '0');-- send the writedata to cache
+		s_waitrequest_data: in std_logic := '0' --get waitrequest signal from cache
                  
 			
          );
@@ -107,7 +107,7 @@ begin
 				cachework <= '0';
 				reading <= '0';
 		end if;
-				
+	 				
        	end if;
     end process;
 	  	
