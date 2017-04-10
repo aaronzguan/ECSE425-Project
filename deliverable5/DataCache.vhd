@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity InstCache is
+entity DataCache is
 generic(
 	ram_size : INTEGER := 32
 );
@@ -28,9 +28,9 @@ port(
 
 	--cachework : in std_logic := '0'
 );
-end InstCache;
+end DataCache;
 
-architecture arch of InstCache is 
+architecture arch of DataCache is 
 
 
  type cache_array is array (31 downto 0) of std_logic_vector(135 downto 0); --data is 127 downto 0, tag is 133 downto 128, flag is 135 downto 134
