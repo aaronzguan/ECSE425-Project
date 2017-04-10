@@ -2,7 +2,7 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity DataCache is
+entity InstCache is
 generic(
 	ram_size : INTEGER := 32
 );
@@ -28,9 +28,9 @@ port(
 
 	--cachework : in std_logic := '0'
 );
-end DataCache;
+end InstCache;
 
-architecture arch of DataCache is 
+architecture arch of InstCache is 
 
 
  type cache_array is array (31 downto 0) of std_logic_vector(135 downto 0); --data is 127 downto 0, tag is 133 downto 128, flag is 135 downto 134
@@ -94,83 +94,108 @@ begin
 	valid <= cache(index)(135); -- valid bit of block
 	dirty <= cache(index)(134); -- dirty bit of block
 
-WBnMRstage: process(s_write, s_read, mem_finish, m_waitrequest, wb_start, mr_start, clock)
-begin 
 
-------------------- Initialize the Cache -------------------
-	if (now < 1 ps) then 
-        	report "cache is initialized";
+
+memAccess: process(invoke_writeback, invoke_memread,wb_finish,mr_finish)
+begin
+    	if(rising_edge(invoke_writeback))then 
+        	wb_start <= '1';
+     	elsif(rising_edge(invoke_memread))then 
+        	mr_start <= '1';
+     	elsif(falling_edge(invoke_writeback))then 
+        	wb_start <= '0';
+     		--  m_write_temp <='0';
+     	elsif(falling_edge(invoke_memread)) then 
+        	mr_start <= '0';    
+     		-- m_read_temp<='0';
+     	end if;
+      	if(rising_edge(wb_finish)) then 
+         	mr_start<= '1';
+        elsif(rising_edge(mr_finish)) then
+         	mem_finish<= '1';
+       	elsif(falling_edge(wb_finish))then 
+            	mr_start<= '0';
+       	elsif(falling_edge(mr_finish))then 
+             	mem_finish <= '0';       
+       	end if;
+end process;
+
+WBnMRstage: process(s_read,s_write,mem_finish, m_waitrequest,wb_start,mr_start,clock)
+begin 
+     	if (now < 1 ps) then 
+		report "cache is initialized";
             	for i in 0 to 31 LOOP
-			cache(i) <=std_logic_vector(to_unsigned(0,136));
+		cache(i) <=std_logic_vector(to_unsigned(0,136));
 		end loop;
       	end if;
-------------------------------------------------------------
 
----------------------- Hit or Miss? ------------------------
-	if(rising_edge(s_read) or rising_edge(s_write) or rising_edge(mem_finish))then 
+	if(rising_edge(s_read) or rising_edge(s_write)or rising_edge(mem_finish))then 
        		if(addr_tag = block_tag and valid = '1')then 
 			if(s_read = '1')then
-               			s_readdata_temp <= cache(index)(32*(to_integer(unsigned(addr_word_offset)))+31 downto 32*(to_integer(unsigned(addr_word_offset))));
-			elsif (s_write = '1') then
+               			s_readdata_temp<= cache(index)(32*(to_integer(unsigned(addr_word_offset)))+31 downto 32*(to_integer(unsigned(addr_word_offset))));
+			elsif(s_write = '1')then
 				cache(index)(32*(to_integer(unsigned(addr_word_offset)))+31 downto 32*(to_integer(unsigned(addr_word_offset)))) <= s_writedata;
 				cache(index)(134) <= '1';  -- set dirty
 			end if;
-               		s_waitrequest_temp <= '0'; 
-       
+               s_waitrequest_temp <= '0';        
        		else  
                		if(dirty = '1') then 
-                   		invoke_writeback<= '1';
+                   	invoke_writeback<= '1';
                 	else 
-                   		invoke_memread<= '1';
+                   	invoke_memread<= '1';
                		end if;
         
         	end if;
       	elsif(falling_edge(s_read) or falling_edge(s_write) or falling_edge(mem_finish)) then 
          	s_waitrequest_temp <= '1';
-         	invoke_writeback <= '0';
+        	invoke_writeback <= '0';
          	invoke_memread <='0';
     	end if;
-------------------------------------------------------------
 
------------------------ Write Back -------------------------
-     	if(wb_stage = '1' and falling_edge(m_waitrequest)) then 
+
+ 	if(wb_stage = '1' and falling_edge(m_waitrequest)) then 
         	if(ref_counter1 = 4)then 
-          		wb_finish <= '1';
-          		ref_counter1 <= 1;
-          		wb_stage <= '0';
-          	else 
+         		wb_finish <= '1';
+        		--  ref_counter1 <= 1;
+        		 -- wb_stage <= '0';
+         	 else 
           		m_write_temp <= '1';
-          		m_writedata_temp <= cache (index) (ref_counter1*32+31 downto ref_counter1*32);
+          		m_writedata_temp<= cache (index) ( ref_counter1*32+31 downto ref_counter1*32);
           		m_addr_temp <=((to_integer(unsigned(block_tag))*512)+(to_integer(unsigned(addr_index))*16)+ref_counter1*4);
-          		ref_counter1 <= ref_counter1+1;
         	end if;
      	elsif(wb_stage = '1' and rising_edge(m_waitrequest)) then 
            	m_write_temp <= '0';
-           	wb_finish <= '0';
-     	end if;
-------------------------------------------------------------
+       		if(ref_counter1 = 4)then 
+          		wb_finish <= '0';
+          		ref_counter1 <= 1;
+          		wb_stage <= '0';
+        	else 
+        		ref_counter1 <= ref_counter1+1;
+         	end if;
+      	end if;
 
-
------------------------ Memory Read -------------------------
 	if(mr_stage = '1' and falling_edge(m_waitrequest)) then 
-         	cache(index)(ref_counter2*32+31 downto ref_counter2*32)<= m_readdata;   ---- write to cache
+         	cache(index)(ref_counter2*32+31 downto ref_counter2*32)<= m_readdata;
         	if(ref_counter2 = 3)then 
+          		report "read finish "; 
           		mr_finish <= '1';
-          		mr_stage <= '0'; 
-          		ref_counter2 <= 0;
           		cache(index)(135)<= '1'; -- set valid
-          		cache(index)(134)<= '0'; -- set dirty
-			cache(index)(133 downto 128) <= addr_tag; -- set tag
+          		cache(index)(134)<= '0'; -- set dirty   
+			cache(index)(133 downto 128) <= addr_tag; -- set tag              
          	else 
           		m_read_temp <= '1';
-         		m_addr_temp <= ((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16)+(ref_counter2+1)*4);
-          		ref_counter2 <= ref_counter2+1;
+          		m_addr_temp <=((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16)+(ref_counter2+1)*4);  
         	end if;
      	elsif(mr_stage = '1' and rising_edge(m_waitrequest)) then 
-           	m_read_temp <= '0';
-           	mr_finish <= '0';
+           	m_read_temp <= '0';     
+      		 if(ref_counter2 = 3)then 
+          		mr_finish <= '0';
+          		mr_stage<= '0'; 
+          		ref_counter2 <= 0;
+        	else 
+       			ref_counter2 <= ref_counter2+1;
+       		end if;
       	end if;
-------------------------------------------------------------
 
 	if(rising_edge(wb_start))then 
          	m_writedata_temp <= cache (index) (31 downto 0);
@@ -180,42 +205,18 @@ begin
 	elsif(rising_edge(mr_start)) then 
          	m_read_temp<='1';
          	m_addr_temp <=((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16));
-         	mr_stage <= '1';
+         	mr_stage<= '1';
 	elsif(falling_edge(wb_start))then 
-        	 m_write_temp <='0';
+         	m_write_temp <='0';
 	elsif(falling_edge(mr_start))then 
-        	m_read_temp <='0';
+       		m_read_temp<='0';
+
 	end if;
 
 end process;
 
 
-memAccess: process(invoke_writeback, invoke_memread,wb_finish,mr_finish)
-begin
-    	if(rising_edge(invoke_writeback))then 
-        	wb_start <= '1';
-     	elsif(rising_edge(invoke_memread))then 
-       	 	mr_start <= '1';
-     	elsif(falling_edge(invoke_writeback))then 
-        	wb_start <= '0';
-    	 --  m_write_temp <='0';
-     	elsif(falling_edge(invoke_memread)) then 
-       		mr_start <= '0';    
-     	-- m_read_temp<='0';
-      	end if;
 
-      	if(rising_edge(wb_finish)) then 
-         	mr_start<= '1';
-        elsif(rising_edge(mr_finish)) then
-         	mem_finish<= '1';
-      	elsif(falling_edge(wb_finish))then 
-            	mr_start<= '0';
-     	elsif(falling_edge(mr_finish))then 
-             	mem_finish <= '0';       
-       	end if;
-
-
-end process;
 
 
 end arch;
