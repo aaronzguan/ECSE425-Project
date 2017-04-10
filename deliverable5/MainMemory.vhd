@@ -53,11 +53,19 @@ ARCHITECTURE rtl OF memory IS
         signal recover_flag: std_logic:='0';
 	signal memwait: std_logic:= '1';
 	signal stallif: std_logic := '0';
+        signal stalldm: std_logic:='0';        
         signal if_wait_in_line : std_logic:= '0';
-         
+        signal dm_r_wait_in_line : std_logic:= '0';
+        signal dm_w_wait_in_line : std_logic:= '0';
         signal ic_r_waitflag: std_logic := '0';
         signal dc_r_waitflag: std_logic:='0';
         signal dc_w_waitflag: std_logic:='0';
+        signal re_if_r: std_logic := '0';
+        signal re_dm_r: std_logic := '0';
+        signal re_dm_w: std_logic := '0';
+        signal new_if:std_logic:= '0';
+        signal new_dm:std_logic:= '0';
+
         signal test: std_logic_vector(31 downto 0);
 
         
@@ -65,12 +73,14 @@ BEGIN
 	addr_instcache <= address_instcache/4;
 	addr_datacache <= address_datacache/4;
     test <= ram_block(1);
-
-
+    
+    new_if <= memread_instcache;
+    new_dm <= memread_datacache or memwrite_datacache;
+    
 
 
 	--This is the main section of the SRAM model
-	mem_process: PROCESS (memread_instcache,memwrite_datacache,memread_datacache,memwait,clock)	
+	mem_process: PROCESS (memread_instcache,memwrite_datacache,memread_datacache,memwait,clock,read_waitreq_reg_instcache,re_if_r,re_dm_r,re_dm_w)	
 --------------------- read program ---------------------
                 file program: text;
 		variable mem_line: line;
@@ -100,56 +110,98 @@ BEGIN
         end if;
 ----------------------------------------------------------
         
-               if(rising_edge(memwrite_datacache)or rising_edge(memread_datacache)) then                      
-                       stallif <= '1';    
-		elsif(falling_edge(memwrite_datacache)) then
-				ram_block(addr_datacache) <= writedata_datacache;					
-		elsif(falling_edge(memread_datacache)) then     
+             
+
+                if((falling_edge(re_dm_w) or falling_edge(memwrite_datacache)) and stalldm = '0') then
+				ram_block(addr_datacache) <= writedata_datacache;	
+	        elsif((falling_edge(re_dm_w) or falling_edge(memwrite_datacache)) and stalldm = '1') then
+                           if(stallif = '1') then 
+                                    stalldm <= '0';
+                                    ram_block(addr_datacache) <= writedata_datacache;	
+                            else 
+                                    dm_w_wait_in_line <= '1';
+                            end if;
+
+		elsif((falling_edge(re_dm_r) or falling_edge(memread_datacache))and stalldm = '0') then     
 				readdata <= ram_block(addr_datacache);	
-		elsif(falling_edge(memread_instcache) and stallif = '0' ) then
-                --report "exe";
+                elsif((falling_edge(re_dm_r) or falling_edge(memread_datacache))and stalldm = '1') then   
+                            if(stallif = '1') then 
+                                    stalldm <= '0';
+                                    readdata <= ram_block(addr_datacache);	
+                            else 
+                                    dm_r_wait_in_line <= '1';
+                            end if;
+
+		elsif((falling_edge(re_if_r) or falling_edge(memread_instcache)) and stallif = '0' ) then
 		 		readdata <= ram_block(addr_instcache);
-                elsif(falling_edge(memread_instcache) and stallif = '1' ) then
+                elsif((falling_edge(re_if_r) or falling_edge(memread_instcache)) and stallif = '1' ) then
                                  if_wait_in_line <= '1';
 		elsif(falling_edge(memwait)) then 
-				stallif <= '0';
-                               if(if_wait_in_line = '1')then                           
-                                  readdata <= ram_block(addr_instcache);
+				                  stallif <= '0';
+                               if(if_wait_in_line = '1')then 
+                                    stalldm <= '1'; 
+                                     re_if_r<= '1';                           
+                                --  readdata <= ram_block(addr_instcache);
                                   if_wait_in_line <='0';
                                 end if;
+                elsif(rising_edge(memwait)) then 
+                                 re_if_r <= '0';
+                elsif(falling_edge(read_waitreq_reg_instcache))then 
+                               stalldm <='0';
+                               if(dm_w_wait_in_line = '1')then 
+                                     stallif <= '1'; 
+                                     re_dm_w <= '1'; 
+                                   -- ram_block(addr_datacache) <= writedata_datacache;	
+                                    dm_w_wait_in_line <= '0';
+                                elsif(dm_r_wait_in_line = '1')then 
+                                    stallif <= '1';
+                                    re_dm_r <= '1';  
+                                  --  readdata <= ram_block(addr_datacache);	
+                                    dm_r_wait_in_line <= '0';
+                                end if;
+              elsif(rising_edge(read_waitreq_reg_instcache))then 
+                                   re_dm_r <= '0'; 
+                                   re_dm_w <= '0';      
+             elsif((rising_edge(memwrite_datacache)or rising_edge(memread_datacache))and(stalldm = '0')) then                      
+                       stallif <= '1';  
+              elsif(rising_edge(memread_instcache) and stallif = '0')then 
+                       stalldm <= '1';
+                                   
 		end if;
 	END PROCESS;
 
 
 	--The waitrequest signal is used to vary response time in simulation
 	--Read and write should never happen at the same time.
-	waitreq_w_proc_datacache: PROCESS (memwrite_datacache,recover_flag)
+	waitreq_w_proc_datacache: PROCESS (memwrite_datacache,recover_flag,dm_w_wait_in_line)
 	BEGIN
                 if(falling_edge(recover_flag))then 
-                           if(dc_w_waitflag = '1')then 
+                           if(dc_w_waitflag = '1'and stalldm = '0')then 
                                write_waitreq_reg_datacache<='1','0' after 9.5*clock_period;
                                dc_w_waitflag <= '0';
                             else
                       write_waitreq_reg_datacache<='1';
                        end if;
                      end if;
-		IF(rising_edge(memwrite_datacache))THEN
-			write_waitreq_reg_datacache <= '0' after mem_delay, '1' after mem_delay + clock_period;
+		IF((falling_edge(dm_w_wait_in_line))or (rising_edge(memwrite_datacache) and stalldm = '1'))THEN
+			write_waitreq_reg_datacache <= '0' after mem_delay;
+                        dc_w_waitflag<= '1';
 		END IF;
 	END PROCESS;
 
-	waitreq_r_proc_datacache: PROCESS (memread_datacache,recover_flag)
+	waitreq_r_proc_datacache: PROCESS (memread_datacache,recover_flag,dm_r_wait_in_line)
 	BEGIN
                  if(falling_edge(recover_flag))then 
-                           if(dc_r_waitflag = '1')then 
+                           if(dc_r_waitflag = '1' and stalldm = '0')then 
                                read_waitreq_reg_datacache<='1','0' after 9.5*clock_period;
                                dc_r_waitflag <= '0';
                             else
                        read_waitreq_reg_datacache<='1';
                        end if;
                      end if;
-		IF(rising_edge(memread_datacache))THEN
-			read_waitreq_reg_datacache <= '0' after mem_delay, '1' after mem_delay + clock_period;
+		IF((falling_edge(dm_r_wait_in_line))or(rising_edge(memread_datacache) and stalldm = '1'))THEN
+			read_waitreq_reg_datacache <= '0' after mem_delay;
+                        dc_r_waitflag <= '1';
 		END IF;
 	END PROCESS;
 
@@ -167,7 +219,7 @@ BEGIN
 	waitreq_r_proc_instcache: PROCESS (if_wait_in_line,memread_instcache,recover_flag)
 	BEGIN
                  if(falling_edge(recover_flag))then 
-                           if(ic_r_waitflag = '1')then 
+                           if(ic_r_waitflag = '1' and stallif = '0')then 
                                read_waitreq_reg_instcache<='1','0' after 9.5*clock_period;
                                ic_r_waitflag <= '0';
                             else
@@ -181,7 +233,7 @@ BEGIN
 		END IF;
 	END PROCESS;
       
-              recover :process(clock,read_waitreq_reg_instcache,write_waitreq_reg_datacache,read_waitreq_reg_instcache)
+              recover :process(clock,read_waitreq_reg_instcache,write_waitreq_reg_datacache,read_waitreq_reg_datacache)
         begin 
              if(falling_edge(read_waitreq_reg_instcache) or falling_edge(read_waitreq_reg_datacache) or falling_edge(write_waitreq_reg_datacache))then 
                    recover_flag <= '1';
