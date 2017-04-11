@@ -64,8 +64,11 @@ begin
 			next_addr <= pc;
 			if( to_integer(unsigned(pc)) < max_inst*4) then 
             s_read_inst <= '1'; -- send the read signal to cache
-			end if;
-			--end if;
+			--end if; 
+            else        
+                        inst <= x"00000020";  
+            end if;
+
 		elsif (falling_edge(s_waitrequest_inst)) then -- IF can receive the results
 	             if( to_integer(unsigned(pc)) > max_inst*4) then         
                         inst <= x"00000020";  
@@ -76,6 +79,9 @@ begin
                          inst <= s_readdata_inst; -- get instruction from cache
 		          end if;	
 		end if;
-	end if;
+		
+
+end if;
+
 end process;
 end behavioral;
