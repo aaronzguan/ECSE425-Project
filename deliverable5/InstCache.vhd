@@ -179,7 +179,7 @@ begin
 if(mr_stage = '1' and falling_edge(m_waitrequest)) then 
          cache(index)(ref_counter2*32+31 downto ref_counter2*32)<= m_readdata;
         if(ref_counter2 = 3)then 
-          report "rad finish "; 
+          --report "rad finish "; 
           mr_finish <= '1';
           cache(index)(135)<= '1';
           cache(index)(134)<= '0';                    

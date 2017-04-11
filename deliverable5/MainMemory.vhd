@@ -65,7 +65,7 @@ ARCHITECTURE rtl OF memory IS
         signal re_dm_w: std_logic := '0';
         signal new_if:std_logic:= '0';
         signal new_dm:std_logic:= '0';
-
+        signal both: std_logic := '0';
         signal test: std_logic_vector(31 downto 0);
 
         
@@ -74,9 +74,9 @@ BEGIN
 	addr_datacache <= address_datacache/4;
     test <= ram_block(1);
     
-    new_if <= memread_instcache;
-    new_dm <= memread_datacache or memwrite_datacache;
-    
+    new_if <= memread_instcache or re_if_r;
+    new_dm <= memread_datacache or memwrite_datacache or re_dm_r or re_dm_w;
+    both <= new_if and new_dm;
 
 
 	--This is the main section of the SRAM model
@@ -109,15 +109,23 @@ BEGIN
 
         end if;
 ----------------------------------------------------------
-        
-             
-
-                if((falling_edge(re_dm_w) or falling_edge(memwrite_datacache)) and stalldm = '0') then
+            if(both = '1') then 
+                   stalldm <= '0';
+                   stallif <= '1';
+                   if_wait_in_line <= '1';
+                   if  (re_dm_w = '1' or memwrite_datacache = '1') then 
+                           report "both happened";
+                           ram_block(addr_datacache) <= writedata_datacache;	              
+                   elsif (re_dm_r = '1' or memread_datacache = '1')then 
+                           report "both happened";
+                           readdata <= ram_block(addr_datacache);	
+                    end if;
+              elsif((falling_edge(re_dm_w) or falling_edge(memwrite_datacache)) and stalldm = '0') then
 				ram_block(addr_datacache) <= writedata_datacache;	
 	        elsif((falling_edge(re_dm_w) or falling_edge(memwrite_datacache)) and stalldm = '1') then
                            if(stallif = '1') then 
                                     stalldm <= '0';
-                                    ram_block(addr_datacache) <= writedata_datacache;	
+                                    ram_block(addr_datacache) <= writedata_datacache;
                             else 
                                     dm_w_wait_in_line <= '1';
                             end if;
@@ -127,8 +135,8 @@ BEGIN
                 elsif((falling_edge(re_dm_r) or falling_edge(memread_datacache))and stalldm = '1') then   
                             if(stallif = '1') then 
                                     stalldm <= '0';
-                                    readdata <= ram_block(addr_datacache);	
-                            else 
+                                    readdata <= ram_block(addr_datacache);	 
+                            else
                                     dm_r_wait_in_line <= '1';
                             end if;
 
@@ -136,7 +144,9 @@ BEGIN
 		 		readdata <= ram_block(addr_instcache);
                 elsif((falling_edge(re_if_r) or falling_edge(memread_instcache)) and stallif = '1' ) then
                                  if_wait_in_line <= '1';
-		elsif(falling_edge(memwait)) then 
+		end if;
+
+                   if(falling_edge(memwait)) then 
 				                  stallif <= '0';
                                if(if_wait_in_line = '1')then 
                                     stalldm <= '1'; 
@@ -144,6 +154,7 @@ BEGIN
                                 --  readdata <= ram_block(addr_instcache);
                                   if_wait_in_line <='0';
                                 end if;
+              
                 elsif(rising_edge(memwait)) then 
                                  re_if_r <= '0';
                 elsif(falling_edge(read_waitreq_reg_instcache))then 
@@ -183,7 +194,7 @@ BEGIN
                       write_waitreq_reg_datacache<='1';
                        end if;
                      end if;
-		IF((falling_edge(dm_w_wait_in_line))or (rising_edge(memwrite_datacache) and stalldm = '1'))THEN
+		IF((falling_edge(dm_w_wait_in_line))or (rising_edge(memwrite_datacache) ))THEN
 			write_waitreq_reg_datacache <= '0' after mem_delay;
                         dc_w_waitflag<= '1';
 		END IF;
@@ -199,8 +210,9 @@ BEGIN
                        read_waitreq_reg_datacache<='1';
                        end if;
                      end if;
-		IF((falling_edge(dm_r_wait_in_line))or(rising_edge(memread_datacache) and stalldm = '1'))THEN
+		IF((falling_edge(dm_r_wait_in_line))or(rising_edge(memread_datacache) ))THEN
 			read_waitreq_reg_datacache <= '0' after mem_delay;
+            report "wr set";
                         dc_r_waitflag <= '1';
 		END IF;
 	END PROCESS;

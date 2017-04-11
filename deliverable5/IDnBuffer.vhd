@@ -65,15 +65,15 @@ begin
      --     test1 <= register_block(2);
 
 -- hazard detect 
-hazard_process: process(ex_state_buffer,clk)
+hazard_process: process(ex_state_buffer,clk,IR_in)
 begin
             hazard_detect<= '0'; 
      if(ex_state_buffer(10) = '1' and bran_taken_in = '0' ) then 
           if(ex_state_buffer(9 downto 5) = rs_pos or ex_state_buffer(4 downto 0) = rt_pos)then
-             IR <= IR_in;             
+             IR <=  x"00000020";           
              hazard_detect <= '1';
            else
-            IR<= x"00000020"; 
+            IR<= IR_in;  
             hazard_detect<= '0'; 
            end if;
     else
@@ -97,7 +97,7 @@ begin
         -- write back the data to register      
        
      if (writeback_register_address /= "00000" and now > 4 ns and mem_data_stall = '0') then
-        report "write back called ";
+       -- report "write back called ";
          register_block(to_integer(unsigned(writeback_register_address))) <= writeback_register_content;
       end if;
      
@@ -268,3 +268,4 @@ MEM_control_buffer <= temp_MEM_control_buffer;
 
 
 end behaviour;
+

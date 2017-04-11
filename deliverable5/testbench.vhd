@@ -203,7 +203,7 @@ port(
 	m_readdata : in std_logic_vector (31 downto 0);
 	m_write : out std_logic;
 	m_writedata : out std_logic_vector (31 downto 0);
-        ismiss: out std_logic;
+       -- ismiss: out std_logic;
 	m_waitrequest : in std_logic
 
 	--cachework : in std_logic := '0'

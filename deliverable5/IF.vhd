@@ -30,16 +30,20 @@ begin
 
 process (pc_plus4,Branch_taken)
 begin
-	if(Branch_taken = '1') and (insert_stall = '0') and (mem_data_stall = '0')then
+	if(rising_edge(Branch_taken)) and (insert_stall = '0') and (mem_data_stall = '0')then
 		pc <= BranchAddr;
 	elsif  (insert_stall = '0' and mem_data_stall = '0') then
 		pc <= pc_plus4;               
 	end if;
 end process;
 
-process(ismiss,s_waitrequest_inst,clock)
+process(ismiss,s_waitrequest_inst,clock,Branch_taken)
 begin
 	if(insert_stall = '0' and mem_data_stall = '0') then
+               if(rising_edge(Branch_taken)) then
+                  s_addr_inst <= BranchAddr; 
+
+                 end if;
 	       if(rising_edge(clock)) then
 	            s_read_inst <= '0';
                     if(ismiss = '0') then 
