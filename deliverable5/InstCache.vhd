@@ -182,7 +182,8 @@ if(mr_stage = '1' and falling_edge(m_waitrequest)) then
           --report "rad finish "; 
           mr_finish <= '1';
           cache(index)(135)<= '1';
-          cache(index)(134)<= '0';                    
+          cache(index)(134)<= '0';  
+          cache(index)(133 downto 128)<= addr_tag;                  
          else 
           m_read_temp <= '1';
           m_addr_temp <=((to_integer(unsigned(addr_tag))*512)+(to_integer(unsigned(addr_index))*16)+(ref_counter2+1)*4);  

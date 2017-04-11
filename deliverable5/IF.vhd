@@ -26,6 +26,7 @@ ARCHITECTURE behavioral of ifstage IS
 
 	signal pc: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
 	signal pc_plus4: STD_LOGIC_VECTOR (31 DOWNTO 0):= (others => '0');
+    signal no_accept:std_logic:='0';
 begin
 
 process (pc_plus4,Branch_taken)
@@ -39,8 +40,12 @@ end process;
 
 process(ismiss,s_waitrequest_inst,clock,Branch_taken)
 begin
+     if(rising_edge(Branch_taken) and ismiss= '1')then 
+          no_accept <= '1';
+       end if;
+
 	if(insert_stall = '0' and mem_data_stall = '0') then
-               if(rising_edge(Branch_taken)) then
+               if(rising_edge(Branch_taken)and ismiss= '0') then
                   s_addr_inst <= BranchAddr; 
 
                  end if;
@@ -64,9 +69,12 @@ begin
 		elsif (falling_edge(s_waitrequest_inst)) then -- IF can receive the results
 	             if( to_integer(unsigned(pc)) > max_inst*4) then         
                         inst <= x"00000020";  
-                     else  
+                     elsif(no_accept ='1')then 
+                           inst <= x"00000020";  
+                           no_accept<= '0';
+                         else
                          inst <= s_readdata_inst; -- get instruction from cache
-		      end if;	
+		          end if;	
 		end if;
 	end if;
 end process;
