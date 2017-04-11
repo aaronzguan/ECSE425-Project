@@ -32,7 +32,7 @@ process (pc_plus4,Branch_taken)
 begin
 	if(rising_edge(Branch_taken)) and (insert_stall = '0') and (mem_data_stall = '0')then
 		pc <= BranchAddr;
-	elsif  (insert_stall = '0' and mem_data_stall = '0') then
+	elsif  (insert_stall = '0' and mem_data_stall = '0' and pc_plus4'event ) then
 		pc <= pc_plus4;               
 	end if;
 end process;
@@ -57,8 +57,9 @@ begin
 		elsif(falling_edge(clock) and ismiss = '0' ) then
 			pc_plus4 <= std_logic_vector(to_unsigned( to_integer(unsigned(pc)) + 4,32));
 			next_addr <= pc;
-			s_read_inst <= '1'; -- send the read signal to cache
-			
+			if( to_integer(unsigned(pc)) < max_inst*4) then 
+            s_read_inst <= '1'; -- send the read signal to cache
+			end if;
 			--end if;
 		elsif (falling_edge(s_waitrequest_inst)) then -- IF can receive the results
 	             if( to_integer(unsigned(pc)) > max_inst*4) then         
