@@ -266,6 +266,29 @@ end process;
 WB_control_buffer <=temp_WB_control_buffer;
 MEM_control_buffer <= temp_MEM_control_buffer;
 
+file_handler_process: process (write_reg_txt)
+        file registerfile : text;
+	variable line_num : line;
+	variable fstatus: file_open_status;
+        variable reg_value : std_logic_vector(31 downto 0);
+      begin
+	-- when the program ends
+	if(write_reg_txt = '1')then
+		report "Start writing the register file";
+        	file_open(fstatus,registerfile, "register_file.txt", WRITE_MODE);
+		-- register_file.txt has 32 lines
+		-- convert each bit value of reg_value to character for writing 
+       		for i in 0 to 31 loop
+         		reg_value := register_block(i);
+          		--write the line
+          		write(line_num, reg_value); 
+          		--write the contents into txt file
+          		writeline(registerfile, line_num); 
+        	end loop;
+        	file_close(registerfile);
+		report "Finish outputing the register file";
+      	end if;
+    end process;
 
 end behaviour;
 
